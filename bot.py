@@ -21,6 +21,7 @@ def load_data():
     return {
         "points": {},
         "last_bonus": {},
+        "last_free": {},  # بۆ ڕاگرتنامەی 24 سەعەتا بەشێ فەیری
         "invited": {},
         "vip": {}
     }
@@ -29,6 +30,7 @@ def save_data():
     data = {
         "points": user_points,
         "last_bonus": last_bonus_date,
+        "last_free": last_free_date,
         "invited": invited_counts,
         "vip": vip_users
     }
@@ -38,6 +40,7 @@ def save_data():
 db = load_data()
 user_points = {int(k): v for k, v in db.get("points", {}).items()}
 last_bonus_date = {int(k): v for k, v in db.get("last_bonus", {}).items()}
+last_free_date = {int(k): v for k, v in db.get("last_free", {}).items()}
 invited_counts = {int(k): v for k, v in db.get("invited", {}).items()}
 vip_users = {int(k): v for k, v in db.get("vip", {}).items()}
 
@@ -131,7 +134,6 @@ def callback_handler(call):
     if call.data == "menu_fake":
         text = "🎁 **بەشێ فەیک**\nفەرموو بەشەک هەڵبژێرە:"
         markup = InlineKeyboardMarkup()
-        # دروستکرنا دوو ڕێز (دوو دوگمە د هەر ڕێزەکێ دا)
         row1 = [
             InlineKeyboardButton("TELEGRAM", callback_data="fake_telegram"),
             InlineKeyboardButton("TIKTOK", callback_data="fake_tiktok")
@@ -152,6 +154,26 @@ def callback_handler(call):
         markup.add(*row4)
         bot.edit_message_text(text, call.message.chat.id, call.message.message_id, reply_markup=markup, parse_mode="Markdown")
 
+    elif call.data == "free_telegram_100":
+        # پشکنینا دەمی بۆ 24 سەعەتا
+        current_time = datetime.now(iraq_tz)
+        last_time_str = last_free_date.get(user_id)
+        
+        if last_time_str:
+            last_time = datetime.fromisoformat(last_time_str)
+            diff = current_time - last_time
+            if diff < timedelta(hours=24):
+                remaining = timedelta(hours=24) - diff
+                hours = int(remaining.total_seconds() // 3600)
+                minutes = int((remaining.total_seconds() % 3600) // 60)
+                bot.answer_callback_query(call.id, f"⚠️ تو دشێ ڕوژانە جارەکێ ڤی بەشی بکاربینی!\nمایە: {hours} دەمژمێر و {minutes} خولەک.", show_alert=True)
+                return
+
+        user_states[user_id] = "WAITING_FREE_LINK"
+        user_temp_data[user_id] = {'service': "تەلەگرام 100 مێمبەر (FREE)"}
+        bot.send_message(call.message.chat.id, "🔗 لینکێ کەناڵ یان گروپێ خۆ بنێرە:")
+        bot.answer_callback_query(call.id)
+
     elif call.data in ["fake_telegram", "fake_tiktok", "fake_instagram"]:
         section_names = {
             "fake_telegram": "TELEGRAM (فەیک)",
@@ -167,12 +189,6 @@ def callback_handler(call):
 
     elif call.data == "fake_wait":
         bot.answer_callback_query(call.id, "⏳ ئەڤ بەشە ل داهاتوویێ دێ هێتە زێدەکرن، چاڤەرێ بن!", show_alert=True)
-
-    elif call.data == "free_telegram_100":
-        user_states[user_id] = "WAITING_FREE_LINK"
-        user_temp_data[user_id] = {'service': "تەلەگرام 100 مێمبەر (FREE)"}
-        bot.send_message(call.message.chat.id, "🔗 لینکێ کەناڵ یان گروپێ خۆ بنێرە:")
-        bot.answer_callback_query(call.id)
 
     elif call.data == "special_tursi":
         text = "🌟 **بەشێ تورسی تایبەت**\nبەشەک هەڵبژێرە:"
@@ -259,6 +275,11 @@ def handle_text(message):
         link = user_temp_data.get(user_id, {}).get('link', 'نەدیار')
         num = text_val
         service = user_temp_data.get(user_id, {}).get('service', 'FREE')
+        
+        # تۆمارکرنا دەمێ نۆکە بۆ تێپەڕاندنا 24 سەعەتی
+        last_free_date[user_id] = datetime.now(iraq_tz).isoformat()
+        save_data()
+        
         user_states[user_id] = None
 
         bot.send_message(message.chat.id, "✅ داخوازیا تە هاتە جێبەجێکردن")
