@@ -9,6 +9,7 @@ CHANNEL_USERNAME = "@TURSE_INFO"  # یانکانیا کەناڵێ بۆ پشکن�
 
 bot = telebot.TeleBot(TOKEN)
 
+
 user_points = {}
 last_bonus_date = {}
 user_states = {}
@@ -40,11 +41,12 @@ def send_welcome(message):
     if len(args) > 1 and args[1].isdigit():
         ref_id = int(args[1])
         if ref_id != user_id and user_id not in user_points:
-            user_points[ref_id] = user_points.get(ref_id, 1487) + 100
+            user_points[ref_id] = user_points.get(ref_id, 0) + 10
             invited_counts[ref_id] = invited_counts.get(ref_id, 0) + 1
 
+    # لێرەدا پۆینتێن بکاربەری نوێ دکەینە 0
     if user_id not in user_points:
-        user_points[user_id] = 1487
+        user_points[user_id] = 0
         
     user_states[user_id] = None
     
@@ -65,7 +67,7 @@ def show_force_sub_message(chat_id):
 
 def show_main_menu(chat_id, message_id=None, is_new=False):
     user_id = chat_id
-    points = user_points.get(user_id, 1487)
+    points = user_points.get(user_id, 0)
     
     text = (
         "💎 - بەخێرهاتن بۆ بۆتا دەنگدانا کوردی\n"
@@ -96,7 +98,7 @@ def callback_handler(call):
         if check_user_membership(user_id):
             bot.answer_callback_query(call.id, "✅ سوپاس، تە جۆین کر! بۆت بۆ تە ڤەبوو.", show_alert=True)
             if user_id not in user_points:
-                user_points[user_id] = 1487
+                user_points[user_id] = 0
             show_main_menu(call.message.chat.id, call.message.message_id, is_new=False)
         else:
             bot.answer_callback_query(call.id, "❌ هێشتا تە جۆین نەکریە! تکایە سەرەتا جۆین کە.", show_alert=True)
@@ -107,7 +109,7 @@ def callback_handler(call):
         return
 
     if user_id not in user_points:
-        user_points[user_id] = 1487
+        user_points[user_id] = 0
 
     if call.data == "daily_bonus":
         current_date = datetime.now(iraq_tz).strftime('%Y-%m-%d')
@@ -138,7 +140,7 @@ def callback_handler(call):
             f"🔗 **لینکێ ئینڤایتێ (Invite) یێ تە:**\n"
             f"`{ref_url}`\n\n"
             f"👥 **چەند کەس ئیناینە؟** {invites_num} کەس\n"
-            f"💰 **پاداشت:** بۆ هەر کەسەکی 100 پۆینت!\n\n"
+            f"💰 **پاداشت:** بۆ هەر کەسەکی 10 پۆینت!\n\n"
             "*(تکایە لینکێ خۆ کۆپی بکە و بۆ هەڤالێن خۆ بنێرە)*"
         )
         bot.answer_callback_query(call.id)
@@ -176,19 +178,19 @@ def callback_handler(call):
         user_states[user_id] = "WAITING_FOR_REACTION_LINK"
         service_name = "ڕیاکشن/دلک" if call.data == "tg_reaction" else "دلک"
         user_temp_data[user_id] = {'service': service_name}
-        bot.send_message(call.message.chat.id, "بەرێز زەحمەت نەبیت لینکێ پۆستێ خۆ فرێکە (1 ڕیاکشن = 5 پۆینت):")
+        bot.send_message(call.message.chat.id, "بەرێز زەحمەت نەبیت لینکێ پۆستێ خۆ فرێکە:")
         bot.answer_callback_query(call.id)
         
     elif call.data == "tg_member":
         user_states[user_id] = "WAITING_FOR_MEMBER_LINK"
         user_temp_data[user_id] = {'service': "مێمبەر"}
-        bot.send_message(call.message.chat.id, "لینکێ کەناڵ یان گروپێ خۆ بدە (1 مێمبەر = 15 پۆینت):")
+        bot.send_message(call.message.chat.id, "لینکێ کەناڵ یان گروپێ خۆ بدە:")
         bot.answer_callback_query(call.id)
 
     elif call.data == "tg_view":
         user_states[user_id] = "WAITING_FOR_VIEW_LINK"
         user_temp_data[user_id] = {'service': "بینەر"}
-        bot.send_message(call.message.chat.id, "لینکێ پۆستێ خۆ فرێکە (1 بینەر = 3 پۆینت):")
+        bot.send_message(call.message.chat.id, "لینکێ پۆستێ خۆ فرێکە:")
         bot.answer_callback_query(call.id)
         
     elif call.data == "back_home":
@@ -201,7 +203,7 @@ def callback_handler(call):
         else:
             text = (
                 "⭐ **کرنا بەشێ VIP**\n\n"
-                "💎 بۆ ڤەکرنا بەشێ VIP پێدڤیە **1000 پۆینت** ژ ئەکاونتێ تە بهێنە خار.\n"
+                "💎 بۆ ڤەکرنا بەشێ VIP پێدڤیە **100 پۆینت** ژ ئەکاونتێ تە بهێنە خار.\n"
                 "ئایا دخوازەی ڤی بەشی بکڕی؟"
             )
             markup = InlineKeyboardMarkup()
@@ -212,14 +214,14 @@ def callback_handler(call):
             bot.edit_message_text(text, call.message.chat.id, call.message.message_id, reply_markup=markup, parse_mode="Markdown")
             
     elif call.data == "vip_buy_yes":
-        user_balance = user_points.get(user_id, 1487)
-        if user_balance >= 1000:
-            user_points[user_id] -= 1000
+        user_balance = user_points.get(user_id, 0)
+        if user_balance >= 100:
+            user_points[user_id] -= 100
             vip_users[user_id] = True
             bot.answer_callback_query(call.id, "🎉 پیرۆزە! بەشێ VIP بۆ تە هاتە ڤەکرن.", show_alert=True)
             show_vip_menu(call.message.chat.id, call.message.message_id)
         else:
-            bot.answer_callback_query(call.id, f"❌ پۆینتێن تە بەش ناکەن! پێتڤی: 1000 پۆینت، یێن تە: {user_balance}", show_alert=True)
+            bot.answer_callback_query(call.id, f"❌ پۆینتێن تە بەش ناکەن! پێتڤی: 100 پۆینت، یێن تە: {user_balance}", show_alert=True)
             show_main_menu(call.message.chat.id, call.message.message_id)
             
     elif call.data == "vip_buy_no":
@@ -246,7 +248,7 @@ def callback_handler(call):
     elif call.data == "vip_tg_vote_en":
         user_states[user_id] = "WAITING_VIP_VOTE_EN_LINK"
         user_temp_data[user_id] = {'service': "دلک/دەنگ ئینگلیزی (VIP)"}
-        bot.send_message(call.message.chat.id, "🔗 لینکێ پۆستێ خۆ بۆ دلک/دەنگی ئینگلیزی (🇺🇸) بنێرە:\n*(نرخ: هەر دلکەک = 30 پۆینت)*")
+        bot.send_message(call.message.chat.id, "🔗 لینکێ پۆستێ خۆ بۆ دلک/دەنگی ئینگلیزی (🇺🇸) بنێرە:")
         bot.answer_callback_query(call.id)
 
     elif call.data.startswith("tg_"):
@@ -286,7 +288,7 @@ def handle_text_steps(message):
             user_temp_data[user_id] = {}
         user_temp_data[user_id]['link'] = message.text
         user_states[user_id] = "WAITING_FOR_REACTION_COUNT"
-        bot.send_message(message.chat.id, "• باشە، چەند دەنک/ڕیاکشن دڤێن ب ژمارە بنێرە:")
+        bot.send_message(message.chat.id, "• باشە، چەند ژمارە دڤێن ب ژمارە بنێرە:")
         
     elif state == "WAITING_FOR_REACTION_COUNT":
         try:
@@ -301,9 +303,8 @@ def handle_text_steps(message):
         if user_balance < required_points:
             bot.send_message(
                 message.chat.id, 
-                f"❌ پۆینتێن ئەکاونتێ تە بەش ناکەن!\n"
-                f"💰 پۆینتێن تە: {user_balance} | پێتڤی: {required_points}\n"
-                "بەرێز، پۆینتێن خۆ پڕ بکە..."
+                f"❌ پۆینتێن تە بەش ناکەن!\n"
+                f"💰 پۆینتێن تە: {user_balance} | پێتڤی: {required_points}"
             )
             user_states[user_id] = None
         else:
@@ -332,7 +333,7 @@ def handle_text_steps(message):
             user_temp_data[user_id] = {}
         user_temp_data[user_id]['link'] = message.text
         user_states[user_id] = "WAITING_FOR_MEMBER_COUNT"
-        bot.send_message(message.chat.id, "چەند مێمبەر دڤێن ب ژمارە بنێرە:")
+        bot.send_message(message.chat.id, "چەند ژمارە دڤێن ب ژمارە بنێرە:")
         
     elif state == "WAITING_FOR_MEMBER_COUNT":
         try:
@@ -341,15 +342,14 @@ def handle_text_steps(message):
             bot.send_message(message.chat.id, "❌ تکایە تنێ ژمارە بنێرە:")
             return
             
-        required_points = count * 15
+        required_points = count * 10
         user_balance = user_points.get(user_id, 0)
         
         if user_balance < required_points:
             bot.send_message(
                 message.chat.id, 
-                f"❌ پۆینتێن ئەکاونتێ تە بەش ناکەن!\n"
-                f"💰 پۆینتێن تە: {user_balance} | پێتڤی: {required_points}\n"
-                "بەرێز، پۆینتێن خۆ پڕ بکە..."
+                f"❌ پۆینتێن تە بەش ناکەن!\n"
+                f"💰 پۆینتێن تە: {user_balance} | پێتڤی: {required_points}"
             )
             user_states[user_id] = None
         else:
@@ -378,7 +378,7 @@ def handle_text_steps(message):
             user_temp_data[user_id] = {}
         user_temp_data[user_id]['link'] = message.text
         user_states[user_id] = "WAITING_FOR_VIEW_COUNT"
-        bot.send_message(message.chat.id, "چەند بینەر دڤێن ب ژمارە بنێرە:")
+        bot.send_message(message.chat.id, "چەند ژمارە دڤێن ب ژمارە بنێرە:")
         
     elif state == "WAITING_FOR_VIEW_COUNT":
         try:
@@ -387,15 +387,14 @@ def handle_text_steps(message):
             bot.send_message(message.chat.id, "❌ تکایە تنێ ژمارە بنێرە:")
             return
             
-        required_points = count * 3
+        required_points = count * 2
         user_balance = user_points.get(user_id, 0)
         
         if user_balance < required_points:
             bot.send_message(
                 message.chat.id, 
-                f"❌ پۆینتێن ئەکاونتێ تە بەش ناکەن!\n"
-                f"💰 پۆینتێن تە: {user_balance} | پێتڤی: {required_points}\n"
-                "بەرێز، پۆینتێن خۆ پڕ بکە..."
+                f"❌ پۆینتێن تە بەش ناکەن!\n"
+                f"💰 پۆینتێن تە: {user_balance} | پێتڤی: {required_points}"
             )
             user_states[user_id] = None
         else:
@@ -424,9 +423,51 @@ def handle_text_steps(message):
             user_temp_data[user_id] = {}
         user_temp_data[user_id]['link'] = message.text
         user_states[user_id] = "WAITING_VIP_TG_MEMBER_COUNT"
-        bot.send_message(message.chat.id, "• چەند مێمبەرێن زەمان 60 ڕۆژ دڤێن؟ ب ژمارە بنێرە:")
+        bot.send_message(message.chat.id, "• چەند ژمارە دڤێن؟ ب ژمارە بنێرە:")
 
     elif state == "WAITING_VIP_TG_MEMBER_COUNT":
+        try:
+            count = int(message.text)
+        except ValueError:
+            bot.send_message(message.chat.id, "❌ تکایە تنێ ژمارە بنێرە:")
+            return
+            
+        required_points = count * 15
+        user_balance = user_points.get(user_id, 0)
+        
+        if user_balance < required_points:
+            bot.send_message(
+                message.chat.id, 
+                f"❌ پۆینتێن تە بەش ناکەن!\n"
+                f"💰 پۆینتێن تە: {user_balance} | پێتڤی: {required_points}"
+            )
+            user_states[user_id] = None
+        else:
+            user_points[user_id] -= required_points
+            link = user_temp_data.get(user_id, {}).get('link', 'نەدیار')
+            user_states[user_id] = None
+            bot.send_message(
+                message.chat.id, 
+                f"✅ داخوازی هاتە وەرگرتن!\n"
+                f"💰 پۆینتێن مای: {user_points[user_id]}"
+            )
+            admin_msg = (
+                f"⭐ **داخوازەکا VIP**\n\n"
+                f"👤 ئایدی: `{user_id}`\n"
+                f"🔗 لینک: {link}\n"
+                f"🔢 ژمارە: {count}\n"
+                f"💎 پۆینتێن هاتینە خار: {required_points}"
+            )
+            bot.send_message(ADMIN_ID, admin_msg, parse_mode="Markdown")
+
+    elif state == "WAITING_VIP_VOTE_EN_LINK":
+        if user_id not in user_temp_data:
+            user_temp_data[user_id] = {}
+        user_temp_data[user_id]['link'] = message.text
+        user_states[user_id] = "WAITING_VIP_VOTE_EN_COUNT"
+        bot.send_message(message.chat.id, "• چەند دەنگ دڤێن؟ ب ژمارە بنێرە:")
+
+    elif state == "WAITING_VIP_VOTE_EN_COUNT":
         try:
             count = int(message.text)
         except ValueError:
@@ -446,62 +487,19 @@ def handle_text_steps(message):
         else:
             user_points[user_id] -= required_points
             link = user_temp_data.get(user_id, {}).get('link', 'نەدیار')
-            user_states[user_id] = None
-            bot.send_message(
-                message.chat.id, 
-                f"✅ داخوازیا مێمبەرێن زەمان 60 ڕۆژ هاتە وەرگرتن!\n"
-                f"💰 پۆینتێن مای: {user_points[user_id]}"
-            )
-            admin_msg = (
-                f"⭐ **داخوازەکا VIP (مێمبەر 60 ڕۆژ)**\n\n"
-                f"👤 ئایدی: `{user_id}`\n"
-                f"🔗 لینک: {link}\n"
-                f"🔢 ژمارە: {count}\n"
-                f"💎 پۆینتێن هاتینە خار: {required_points}"
-            )
-            bot.send_message(ADMIN_ID, admin_msg, parse_mode="Markdown")
-
-    elif state == "WAITING_VIP_VOTE_EN_LINK":
-        if user_id not in user_temp_data:
-            user_temp_data[user_id] = {}
-        user_temp_data[user_id]['link'] = message.text
-        user_states[user_id] = "WAITING_VIP_VOTE_EN_COUNT"
-        bot.send_message(message.chat.id, "• چەند دلک/دەنگێن ئینگلیزی (🇺🇸) دڤێن؟ (هەر یەک = 30 پۆینت):")
-
-    elif state == "WAITING_VIP_VOTE_EN_COUNT":
-        try:
-            count = int(message.text)
-        except ValueError:
-            bot.send_message(message.chat.id, "❌ تکایە تنێ ژمارە بنێرە:")
-            return
-            
-        required_points = count * 30
-        user_balance = user_points.get(user_id, 0)
-        
-        if user_balance < required_points:
-            bot.send_message(
-                message.chat.id, 
-                f"❌ پۆینتێن ئەکاونتێ تە بەش ناکەن!\n"
-                f"💰 پۆینتێن تە: {user_balance} | پێتڤی: {required_points}\n"
-                "بەرێز، پۆینتێن خۆ پڕ بکە..."
-            )
-            user_states[user_id] = None
-        else:
-            user_points[user_id] -= required_points
-            link = user_temp_data.get(user_id, {}).get('link', 'نەدیار')
             
             user_states[user_id] = None
             bot.send_message(
                 message.chat.id, 
-                f"✅ پیرۆزە، داخوازیا دلکێن ئینگلیزی هاتە بجهئینان!\n"
+                f"✅ پیرۆزە، داخوازیا تە هاتە بجهئینان!\n"
                 f"💰 پۆینتێن مای ل ئەکاونتێ تە: {user_points[user_id]}"
             )
             admin_msg = (
-                f"⭐ **داخوازەکا VIP (دلک/دەنگ ئینگلیزی 🇺🇸)**\n\n"
+                f"⭐ **داخوازەکا VIP**\n\n"
                 f"👤 ئاییدیا بکاربەری: `{user_id}`\n"
                 f"🔗 لینک: {link}\n"
                 f"🔢 ژمارە: {count}\n"
-                f"💎 پۆینتێن هاتینە خار: {required_points} (هەر یەک 30 پۆینت)"
+                f"💎 پۆینتێن هاتینە خار: {required_points}"
             )
             bot.send_message(ADMIN_ID, admin_msg, parse_mode="Markdown")
             
