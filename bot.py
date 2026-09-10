@@ -1,14 +1,14 @@
-pyTelegramBotAPI
 import telebot
-from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
+from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton, ReplyKeyboardRemove
 from datetime import datetime, timezone, timedelta
+import time
 
-TOKEN = "8842143426:AAEseYCtaX2t2TqI1mWuTrARWWu3RazWwUM"
-ADMIN_ID = 8832347891  # ئایدییا ئەدمینی بۆ وەرگرتنا داخوازیان
-CHANNEL_USERNAME = "@TURSE_INFO"  # یانکانیا کەناڵێ بۆ پشکنینا جۆینبوونێ
+# ⚠️ تکایە تۆکێنێ ڕاست و نوێ ژ @BotFather لێرە دابنە
+TOKEN = "8842143426:AAEt-8OhhfrpmDeN1ibXyn3DYYGb2tCqTvs"
+ADMIN_ID = 8832347891
+CHANNEL_USERNAME = "@TURSE_INFO"
 
 bot = telebot.TeleBot(TOKEN)
-
 
 user_points = {}
 last_bonus_date = {}
@@ -449,7 +449,7 @@ def handle_text_steps(message):
             bot.send_message(
                 message.chat.id, 
                 f"✅ داخوازی هاتە وەرگرتن!\n"
-                f"💰 پۆینتێن مای: {user_points[user_id]}"
+                f"💰 کۆینێن مای: {user_points[user_id]}"
             )
             admin_msg = (
                 f"⭐ **داخوازەکا VIP**\n\n"
