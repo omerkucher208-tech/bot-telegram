@@ -74,7 +74,7 @@ def show_main_menu(chat_id, message_id=None, is_new=False):
     markup = InlineKeyboardMarkup()
     markup.add(InlineKeyboardButton("🎁 بەشێ فەیک", callback_data="menu_fake"))
     markup.add(InlineKeyboardButton("⭐ ڤەکرنا بەشێ VIP", callback_data="vip"))
-    markup.add(InlineKeyboardButton("🌟 تورسی تایبەت", callback_data="special_tursi"))
+    markup.add(InlineKeyboardButton("🌟 تورسی تایبەت (دەرەوەی VIP)", callback_data="special_tursi"))
     markup.add(InlineKeyboardButton("🎟 بکارئینانا کۆدێ دیاری", callback_data="code"))
     markup.add(InlineKeyboardButton("🎁 دیاریا ڕۆژانە (+10 پۆینت)", callback_data="daily_bonus"))
     markup.add(InlineKeyboardButton("🌐 لینکێ ئینڤایتێ (Ref)", callback_data="ref_link"))
@@ -245,6 +245,26 @@ def callback_handler(call):
         
     elif call.data == "vip_instagram":
         bot.answer_callback_query(call.id, "📸 بەشێ VIP - ئینستگرام بزوی زێدە دبت.", show_alert=True)
+
+    elif call.data == "vip_special_tursi":
+        text = "🌟 **بەشێ VIP - تورسی تایبەت**\nخزمەتگوزاریا خۆ هەڵبژێرە:"
+        markup = InlineKeyboardMarkup()
+        markup.add(InlineKeyboardButton("⚽ COIN PES", callback_data="vip_coin_pes"))
+        markup.add(InlineKeyboardButton("🎮 UC PUBG", callback_data="vip_uc_pubg"))
+        markup.add(InlineKeyboardButton("🔙 ڤەگەر بۆ VIP", callback_data="vip"))
+        bot.edit_message_text(text, call.message.chat.id, call.message.message_id, reply_markup=markup, parse_mode="Markdown")
+
+    elif call.data == "vip_coin_pes":
+        user_states[user_id] = "WAITING_VIP_COIN_PES"
+        user_temp_data[user_id] = {'service': "COIN PES (VIP)"}
+        bot.send_message(call.message.chat.id, "⚽ ئایدی یان زانیاریێن خۆ بۆ وەرگرتنا **COIN PES** بنێرە:")
+        bot.answer_callback_query(call.id)
+
+    elif call.data == "vip_uc_pubg":
+        user_states[user_id] = "WAITING_VIP_UC_PUBG"
+        user_temp_data[user_id] = {'service': "UC PUBG (VIP)"}
+        bot.send_message(call.message.chat.id, "🎮 ئایدی (ID) یان ناڤێ خۆ بۆ وەرگرتنا **UC PUBG** بنێرە:")
+        bot.answer_callback_query(call.id)
         
     elif call.data == "vip_tg_member_60":
         user_states[user_id] = "WAITING_VIP_TG_MEMBER_LINK"
@@ -274,6 +294,7 @@ def show_vip_menu(chat_id, message_id):
     markup = InlineKeyboardMarkup()
     markup.add(InlineKeyboardButton("✈️ تەلەگرام (VIP)", callback_data="vip_telegram"))
     markup.add(InlineKeyboardButton("📸 ئینستگرام (VIP)", callback_data="vip_instagram"))
+    markup.add(InlineKeyboardButton("🌟 تورسی تایبەت (VIP)", callback_data="vip_special_tursi"))
     markup.add(InlineKeyboardButton("🔙 ڤەگەر بۆ مێنویێ سەرەکی", callback_data="back_home"))
     try:
         bot.edit_message_text(text, chat_id, message_id, reply_markup=markup, parse_mode="Markdown")
@@ -513,6 +534,25 @@ def handle_text_steps(message):
                 f"💎 پۆینتێن هاتینە خار: {required_points} (هەر یەک 30 پۆینت)"
             )
             bot.send_message(ADMIN_ID, admin_msg, parse_mode="Markdown")
+
+    elif state in ["WAITING_VIP_COIN_PES", "WAITING_VIP_UC_PUBG"]:
+        info_text = message.text
+        service_name = user_temp_data.get(user_id, {}).get('service', 'تورسی تایبەت')
+        user_states[user_id] = None
+        
+        bot.send_message(
+            message.chat.id, 
+            f"✅ زانیاریێن تە بۆ ({service_name}) ب سەرکەفتیانە هاتنە وەرگرتن!\n"
+            "ئەدمین دێ زوو لێ هۆشدار بیت."
+        )
+        
+        admin_msg = (
+            f"🌟 **داخوازەکا نووی (تورسی تایبەت - VIP)**\n\n"
+            f"👤 ئایدییا بکاربەری: `{user_id}`\n"
+            f"📌 خزمەتگوزاری: {service_name}\n"
+            f"📝 زانیاری / ئایدی: {info_text}"
+        )
+        bot.send_message(ADMIN_ID, admin_msg, parse_mode="Markdown")
             
     else:
         pass
