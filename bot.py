@@ -41,7 +41,6 @@ last_bonus_date = {int(k): v for k, v in db.get("last_bonus", {}).items()}
 invited_counts = {int(k): v for k, v in db.get("invited", {}).items()}
 vip_users = {int(k): v for k, v in db.get("vip", {}).items()}
 
-# پۆینتێن هەموو کەسەکی دکەینە 1000
 for uid in list(user_points.keys()):
     user_points[uid] = 1000
 save_data()
@@ -95,6 +94,7 @@ def show_main_menu(chat_id, message_id=None, is_new=False):
     )
     
     markup = InlineKeyboardMarkup()
+    markup.add(InlineKeyboardButton("🎁 بەشێ FREE", callback_data="menu_free"))
     markup.add(InlineKeyboardButton("🎁 بەشێ فەیک", callback_data="menu_fake"))
     markup.add(InlineKeyboardButton("⭐ ڤەکرنا بەشێ VIP", callback_data="vip"))
     markup.add(InlineKeyboardButton("🌟 تورسی تایبەت", callback_data="special_tursi"))
@@ -133,19 +133,29 @@ def callback_handler(call):
         user_points[user_id] = 1000
         save_data()
 
-    if call.data == "special_tursi":
-        text = (
-            "🌟 **بەخێرهاتن بۆ بەشی تورسی تایبەت!**\n\n"
-            "👇 تکایە بەشەکێ هەڵبژێرە:"
-        )
+    if call.data == "menu_free":
+        text = "🎁 **بەشێ FREE**\nفەرموو خزمەتگوزاریا تەلەگرام هەڵبژێرە:"
         markup = InlineKeyboardMarkup()
-        markup.add(InlineKeyboardButton("✈️ تەلەگرام (تورسی تایبەت)", callback_data="tursi_telegram"))
-        markup.add(InlineKeyboardButton("🎵 تیکتۆک (تورسی تایبەت)", callback_data="tursi_tiktok"))
-        markup.add(InlineKeyboardButton("🔙 ڤەگەر بۆ مێنویێ سەرەکی", callback_data="back_home"))
+        markup.add(InlineKeyboardButton("✈️ تەلەگرام (100 مێمبەر)", callback_data="free_telegram_100"))
+        markup.add(InlineKeyboardButton("🔙 ڤەگەر", callback_data="back_home"))
+        bot.edit_message_text(text, call.message.chat.id, call.message.message_id, reply_markup=markup, parse_mode="Markdown")
+
+    elif call.data == "free_telegram_100":
+        user_states[user_id] = "WAITING_FREE_LINK"
+        user_temp_data[user_id] = {'service': "تەلەگرام 100 مێمبەر (FREE)"}
+        bot.send_message(call.message.chat.id, "🔗 لینکێ کەناڵ یان گروپێ خۆ بنێرە:")
+        bot.answer_callback_query(call.id)
+
+    elif call.data == "special_tursi":
+        text = "🌟 **بەشێ تورسی تایبەت**\nبەشەک هەڵبژێرە:"
+        markup = InlineKeyboardMarkup()
+        markup.add(InlineKeyboardButton("✈️ تەلەگرام", callback_data="tursi_telegram"))
+        markup.add(InlineKeyboardButton("🎵 تیکتۆک", callback_data="tursi_tiktok"))
+        markup.add(InlineKeyboardButton("🔙 ڤەگەر", callback_data="back_home"))
         bot.edit_message_text(text, call.message.chat.id, call.message.message_id, reply_markup=markup, parse_mode="Markdown")
 
     elif call.data == "tursi_telegram":
-        text = "✈️ **تەلەگرام - تورسی تایبەت**\nفەرموو خزمەتگوزاریا خۆ هەڵبژێرە:"
+        text = "✈️ **تەلەگرام - تورسی تایبەت**"
         markup = InlineKeyboardMarkup()
         markup.add(InlineKeyboardButton("👥 مێمبەر", callback_data="ts_tg_member"))
         markup.add(InlineKeyboardButton("👁 بینەر", callback_data="ts_tg_view"))
@@ -153,10 +163,10 @@ def callback_handler(call):
         bot.edit_message_text(text, call.message.chat.id, call.message.message_id, reply_markup=markup, parse_mode="Markdown")
 
     elif call.data == "tursi_tiktok":
-        text = "🎵 **تیکتۆک - تورسی تایبەت**\nفەرموو خزمەتگوزاریا خۆ هەڵبژێرە:"
+        text = "🎵 **تیکتۆک - تورسی تایبەت**"
         markup = InlineKeyboardMarkup()
-        markup.add(InlineKeyboardButton("👁 بینەرێن تیکتۆک", callback_data="ts_tt_view"))
-        markup.add(InlineKeyboardButton("❤️ دلکێن تیکتۆک", callback_data="ts_tt_like"))
+        markup.add(InlineKeyboardButton("👁 بینەر", callback_data="ts_tt_view"))
+        markup.add(InlineKeyboardButton("❤️ دلک", callback_data="ts_tt_like"))
         markup.add(InlineKeyboardButton("🔙 ڤەگەر", callback_data="special_tursi"))
         bot.edit_message_text(text, call.message.chat.id, call.message.message_id, reply_markup=markup, parse_mode="Markdown")
 
@@ -204,7 +214,37 @@ def handle_text(message):
         return
 
     state = user_states.get(user_id)
-    if state == "WAITING_TURSI_LINK":
+
+    if state == "WAITING_FREE_LINK":
+        if user_id not in user_temp_data:
+            user_temp_data[user_id] = {}
+        user_temp_data[user_id]['link'] = message.text
+        user_states[user_id] = "WAITING_FREE_NUMBER"
+        bot.send_message(message.chat.id, "🔢 تکایە ژمارەیەکێ ژ (1 تا 100) بنڤیسە:")
+
+    elif state == "WAITING_FREE_NUMBER":
+        text_val = message.text.strip()
+        if not text_val.isdigit() or not (1 <= int(text_val) <= 100):
+            bot.send_message(message.chat.id, "❌ تکایە تنێ ژمارەیەکێ د ناڤبەرا 1 بۆ 100 دا بنڤیسە:")
+            return
+
+        link = user_temp_data.get(user_id, {}).get('link', 'نەدیار')
+        num = text_val
+        service = user_temp_data.get(user_id, {}).get('service', 'FREE')
+        user_states[user_id] = None
+
+        bot.send_message(message.chat.id, "✅ داخوازیا تە هاتە جێبەجێکردن")
+
+        admin_msg = (
+            f"🎁 **داخوازەکا نووی (بەشێ FREE)**\n\n"
+            f"👤 ئایدی: `{user_id}`\n"
+            f"📌 خزمەتگوزاری: {service}\n"
+            f"🔗 لینک: {link}\n"
+            f"🔢 ژمارە (1-100): {num}"
+        )
+        bot.send_message(ADMIN_ID, admin_msg, parse_mode="Markdown")
+
+    elif state == "WAITING_TURSI_LINK":
         link = message.text
         service = user_temp_data.get(user_id, {}).get('service', 'تورسی تایبەت')
         user_states[user_id] = None
