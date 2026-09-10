@@ -106,23 +106,13 @@ def background_vip_checker():
                     if exp_str:
                         exp_time = datetime.fromisoformat(exp_str)
                         if now >= exp_time:
-                            current_pts = user_points.get(uid, 1000)
-                            if current_pts >= 1200:
-                                user_points[uid] = current_pts - 1200
-                                vip_expiry_date[uid] = (now + timedelta(days=7)).isoformat()
-                                save_data()
-                                try:
-                                    bot.send_message(uid, "⭐ **نووکرنا خۆکارا VIP:**\nماوەیا حەفتییا تە یا VIP تەواو بوو و ب سەرکەوتوویی 1200 پۆینت ژ ئەکاونتا تە هاتە کێشان بۆ حەفتییەکا نوو!")
-                                except:
-                                    pass
-                            else:
-                                vip_users[uid] = False
-                                vip_expiry_date.pop(uid, None)
-                                save_data()
-                                try:
-                                    bot.send_message(uid, "⚠️ **تێبینییا VIP:**\nماوەیا VIP تەواو بوو، لێ پۆینتێن تە تێرانەکن (پێدڤی ب 1200 پۆینتانە)، ئەکاونتا تە گوهۆڕی بۆ FREE 👤.")
-                                except:
-                                    pass
+                            vip_users[uid] = False
+                            vip_expiry_date.pop(uid, None)
+                            save_data()
+                            try:
+                                bot.send_message(uid, "⚠️ **تێبینییا VIP:**\nماوەیا VIP یا حەفتییا تە تەواو بوو.")
+                            except:
+                                pass
         except Exception as e:
             print(f"Error in background checker: {e}")
         time.sleep(3600)
@@ -166,7 +156,7 @@ def show_main_menu(chat_id, message_id=None, is_new=False):
     markup = InlineKeyboardMarkup()
     markup.add(InlineKeyboardButton("🎁 بەشێ فەیک", callback_data="menu_fake"))
     markup.add(InlineKeyboardButton("بەشێ vip", callback_data="vip"))
-    markup.add(InlineKeyboardButton("⭐ کڕینا VIP (1200 پۆینت / 1 حەفتە)", callback_data="buy_vip_status"))
+    markup.add(InlineKeyboardButton("⭐ چالاککرنا VIP (1 حەفتە)", callback_data="buy_vip_status"))
     markup.add(InlineKeyboardButton("🧠🫂 کۆمکرنا پوینتان", callback_data="collect_points_menu"))
     markup.add(InlineKeyboardButton("💾 زانیاری دەربارەی ئەکاونت", callback_data="account_info"))
     markup.add(InlineKeyboardButton("🛒 کڕینا پۆینتان", callback_data="buy_points"))
@@ -233,11 +223,6 @@ def callback_handler(call):
             pass
 
     elif call.data in ["vip_tg_vote", "vip_tg_member"]:
-        current_pts = user_points.get(user_id, 1000)
-        if current_pts < 1200:
-            bot.answer_callback_query(call.id, "❌ بۆ بکارئینانا بەشێ VIP، پێدڤیە کێمتر نە ژ 1200 پۆینتان هەبن!", show_alert=True)
-            return
-
         names = {
             "vip_tg_vote": "دەنگ / دلک (تەلەگرام VIP)",
             "vip_tg_member": "مێمبەر 60 رۆژ زەمان (تەلەگرام VIP)"
@@ -261,11 +246,6 @@ def callback_handler(call):
             pass
 
     elif call.data in ["vip_tt_saved", "vip_tt_like_live", "vip_tt_share"]:
-        current_pts = user_points.get(user_id, 1000)
-        if current_pts < 1200:
-            bot.answer_callback_query(call.id, "❌ بۆ بکارئینانا بەشێ VIP، پێدڤیە کێمتر نە ژ 1200 پۆینتان هەبن!", show_alert=True)
-            return
-
         names = {
             "vip_tt_saved": "Saved (تیکتۆک VIP)",
             "vip_tt_like_live": "Like Live (تیکتۆک VIP)",
@@ -329,7 +309,7 @@ def callback_handler(call):
 
         markup = InlineKeyboardMarkup()
         if not is_vip:
-            markup.add(InlineKeyboardButton("⭐ بوون بە VIP (1200 پۆینت / 1 حەفتە)", callback_data="buy_vip_status"))
+            markup.add(InlineKeyboardButton("⭐ چالاککرنا VIP (1 حەفتە)", callback_data="buy_vip_status"))
         markup.add(InlineKeyboardButton("🔙 ڤەگەر", callback_data="back_home"))
 
         try:
@@ -338,16 +318,11 @@ def callback_handler(call):
             pass
 
     elif call.data == "buy_vip_status":
-        points = user_points.get(user_id, 1000)
-        if points < 1200:
-            bot.answer_callback_query(call.id, "❌ پۆینتێن تە تێرانەکن! پۆینتێن پێدڤی بۆ بوون بە VIP: 1200 پۆینت.", show_alert=True)
-        else:
-            user_points[user_id] = points - 1200
-            vip_users[user_id] = True
-            vip_expiry_date[user_id] = (datetime.now(iraq_tz) + timedelta(days=7)).isoformat()
-            save_data()
-            bot.answer_callback_query(call.id, "🎉 پیرۆزە! تو بۆ ماوەیا 1 حەفتی بوویە خاوەن ئەکاونتا VIP ⭐", show_alert=True)
-            show_main_menu(call.message.chat.id, call.message.message_id, is_new=False)
+        vip_users[user_id] = True
+        vip_expiry_date[user_id] = (datetime.now(iraq_tz) + timedelta(days=7)).isoformat()
+        save_data()
+        bot.answer_callback_query(call.id, "🎉 پیرۆزە! تو بۆ ماوەیا 1 حەفتی بوویە خاوەن ئەکاونتا VIP ⭐ بێ مەرجا پۆینتان", show_alert=True)
+        show_main_menu(call.message.chat.id, call.message.message_id, is_new=False)
 
     elif call.data == "buy_points":
         text = (
@@ -605,16 +580,6 @@ def handle_text(message):
         elif s_key == "vip_tg_member":
             cost = quantity * 80
 
-        user_points[user_id] = user_points.get(user_id, 1000)
-
-        if user_points[user_id] < cost:
-            try:
-                bot.send_message(message.chat.id, f"❌ پۆینتێن تە تێرانەکن!\n💰 پۆینتێن تە: {user_points[user_id]}\n🏷 پێدڤی ب: {cost} پۆینتانە.\n👉 پۆینتێن خۆ پڕبکە.")
-            except:
-                pass
-            user_states[user_id] = None
-            return
-
         temp['quantity'] = quantity
         temp['cost'] = cost
         user_temp_data[user_id] = temp
@@ -632,7 +597,6 @@ def handle_text(message):
         quantity = temp.get('quantity', 0)
         cost = temp.get('cost', 0)
 
-        user_points[user_id] = user_points.get(user_id, 1000) - cost
         total_requests[user_id] = total_requests.get(user_id, 0) + 1
         save_data()
         user_states[user_id] = None
@@ -657,7 +621,7 @@ def handle_text(message):
             f"👤 ئایدی: `{user_id}`\n"
             f"📌 خزمەتگوزاری: {s_name}\n"
             f"🔢 بڕ: {quantity}\n"
-            f"💰 پۆینتێن هاتینە کێمکرن: {cost}\n"
+            f"💰 پۆینت: {cost}\n"
             f"🔗 لینک: {link}\n"
             f"📅 رۆژ: {date_str}\n"
             f"⏰ دەم: {time_str}"
@@ -678,20 +642,7 @@ def handle_text(message):
 
         quantity = int(clean_text)
         temp = user_temp_data.get(user_id, {})
-        s_key = temp.get('service_key')
-
-        # 100 save/like live/share = 300 points
         cost = int((quantity / 100) * 300)
-
-        user_points[user_id] = user_points.get(user_id, 1000)
-
-        if user_points[user_id] < cost:
-            try:
-                bot.send_message(message.chat.id, f"❌ پۆینتێن تە تێرانەکن!\n💰 پۆینتێن تە: {user_points[user_id]}\n🏷 پێدڤی ب: {cost} پۆینتانە.\n👉 پۆینتێن خۆ پڕبکە.")
-            except:
-                pass
-            user_states[user_id] = None
-            return
 
         temp['quantity'] = quantity
         temp['cost'] = cost
@@ -709,7 +660,6 @@ def handle_text(message):
         quantity = temp.get('quantity', 0)
         cost = temp.get('cost', 0)
 
-        user_points[user_id] = user_points.get(user_id, 1000) - cost
         total_requests[user_id] = total_requests.get(user_id, 0) + 1
         save_data()
         user_states[user_id] = None
@@ -728,7 +678,7 @@ def handle_text(message):
             f"👤 ئایدی: `{user_id}`\n"
             f"📌 خزمەتگوزاری: {s_name}\n"
             f"🔢 بڕ: {quantity}\n"
-            f"💰 پۆینتێن هاتینە کێمکرن: {cost}\n"
+            f"💰 پۆینت: {cost}\n"
             f"🔗 لینک: {link}\n"
             f"📅 رۆژ: {date_str}\n"
             f"⏰ دەم: {time_str}"
@@ -763,7 +713,7 @@ def handle_text(message):
 
         if user_points[user_id] < cost:
             try:
-                bot.send_message(message.chat.id, f"❌ پۆینتێن تە تێرانەکن!\n💰 پۆینتێن تە: {user_points[user_id]}\n🏷 پێدڤی ب: {cost} پۆینتانە.\n👉 پۆینتێن خۆ پڕبکە.")
+                bot.send_message(message.chat.id, f"❌ پۆینتێن تە تێرانەکن!\n💰 پۆینتێن تە: {user_points[user_id]}\n🏷 پێدڤی ب: {cost} پۆینتانە.")
             except:
                 pass
             user_states[user_id] = None
@@ -831,7 +781,7 @@ def handle_text(message):
 
         if user_points[user_id] < cost:
             try:
-                bot.send_message(message.chat.id, f"❌ پۆینتێن تە تێرانەکن!\n💰 پۆینتێن تە: {user_points[user_id]}\n🏷 پێدڤی ب: {cost} پۆینتانە.\n👉 پۆینتێن خۆ پڕبکە.")
+                bot.send_message(message.chat.id, f"❌ پۆینتێن تە تێرانەکن!\n💰 پۆینتێن تە: {user_points[user_id]}\n🏷 پێدڤی ب: {cost} پۆینتانە.")
             except:
                 pass
             user_states[user_id] = None
