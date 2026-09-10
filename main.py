@@ -1,1 +1,1 @@
-
+bot.infinity_polling()
