@@ -1,20 +1,51 @@
-
 import telebot
 from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
 from datetime import datetime, timezone, timedelta
+import json
+import os
 
-TOKEN = "8842143426:AAEt-8OhhfrpmDeN1ibXyn3DYYGb2tCqTvs"
+TOKEN = "8842143426:AAEseYCtaX2t2TqI1mWuTrARWWu3RazWwUM"
 ADMIN_ID = 8832347891
 CHANNEL_USERNAME = "@TURSE_INFO"
 
 bot = telebot.TeleBot(TOKEN)
 
-user_points = {}
-last_bonus_date = {}
+# فایڵێن هەڵگرتنام داتای
+DATA_FILE = "bot_data.json"
+
+def load_data():
+    if os.path.exists(DATA_FILE):
+        try:
+            with open(DATA_FILE, "r", encoding="utf-8") as f:
+                return json.load(f)
+        except:
+            pass
+    return {
+        "points": {},
+        "last_bonus": {},
+        "invited": {},
+        "vip": {}
+    }
+
+def save_data():
+    data = {
+        "points": user_points,
+        "last_bonus": last_bonus_date,
+        "invited": invited_counts,
+        "vip": vip_users
+    }
+    with open(DATA_FILE, "w", encoding="utf-8") as f:
+        json.dump(data, f, ensure_ascii=False, indent=4)
+
+# بارکرنا داتایان دەما بۆت دست پێدکەت
+db = load_data()
+user_points = {int(k): v for k, v in db.get("points", {}).items()}
+last_bonus_date = {int(k): v for k, v in db.get("last_bonus", {}).items()}
+invited_counts = {int(k): v for k, v in db.get("invited", {}).items()}
+vip_users = {int(k): v for k, v in db.get("vip", {}).items()}
+
 user_states = {}
 user_temp_data = {}
-invited_counts = {}
-vip_users = {}
 
 iraq_tz = timezone(timedelta(hours=3))
 
@@ -42,9 +73,11 @@ def send_welcome(message):
         if ref_id != user_id and user_id not in user_points:
             user_points[ref_id] = user_points.get(ref_id, 1487) + 100
             invited_counts[ref_id] = invited_counts.get(ref_id, 0) + 1
+            save_data()
 
     if user_id not in user_points:
         user_points[user_id] = 1487
+        save_data()
         
     user_states[user_id] = None
     show_main_menu(message.chat.id, message.message_id if hasattr(message, 'message_id') else None, is_new=True)
@@ -94,6 +127,7 @@ def callback_handler(call):
             bot.answer_callback_query(call.id, "✅ سوپاس، تە جۆین کر! بۆت بۆ تە ڤەبوو.", show_alert=True)
             if user_id not in user_points:
                 user_points[user_id] = 1487
+                save_data()
             show_main_menu(call.message.chat.id, call.message.message_id, is_new=False)
         else:
             bot.answer_callback_query(call.id, "❌ هێشتا تە جۆین نەکریە! تکایە سەرەتا جۆین کە.", show_alert=True)
@@ -105,6 +139,7 @@ def callback_handler(call):
 
     if user_id not in user_points:
         user_points[user_id] = 1487
+        save_data()
 
     if call.data == "daily_bonus":
         current_date = datetime.now(iraq_tz).strftime('%Y-%m-%d')
@@ -118,6 +153,7 @@ def callback_handler(call):
         else:
             last_bonus_date[user_id] = current_date
             user_points[user_id] += 10
+            save_data()
             current_points = user_points[user_id]
             bot.answer_callback_query(
                 call.id, 
@@ -223,6 +259,7 @@ def callback_handler(call):
         if user_balance >= 1000:
             user_points[user_id] -= 1000
             vip_users[user_id] = True
+            save_data()
             bot.answer_callback_query(call.id, "🎉 پیرۆزە! بەشێ VIP بۆ تە هاتە ڤەکرن.", show_alert=True)
             show_vip_menu(call.message.chat.id, call.message.message_id)
         else:
@@ -336,6 +373,7 @@ def handle_text_steps(message):
             user_states[user_id] = None
         else:
             user_points[user_id] -= required_points
+            save_data()
             service_name = user_temp_data.get(user_id, {}).get('service', 'ڕیاکشن')
             link = user_temp_data.get(user_id, {}).get('link', 'نەدیار')
             
@@ -382,6 +420,7 @@ def handle_text_steps(message):
             user_states[user_id] = None
         else:
             user_points[user_id] -= required_points
+            save_data()
             service_name = user_temp_data.get(user_id, {}).get('service', 'مێمبەر')
             link = user_temp_data.get(user_id, {}).get('link', 'نەدیار')
             
@@ -428,6 +467,7 @@ def handle_text_steps(message):
             user_states[user_id] = None
         else:
             user_points[user_id] -= required_points
+            save_data()
             service_name = user_temp_data.get(user_id, {}).get('service', 'بینەر')
             link = user_temp_data.get(user_id, {}).get('link', 'نەدیار')
             
@@ -473,6 +513,7 @@ def handle_text_steps(message):
             user_states[user_id] = None
         else:
             user_points[user_id] -= required_points
+            save_data()
             link = user_temp_data.get(user_id, {}).get('link', 'نەدیار')
             user_states[user_id] = None
             bot.send_message(
@@ -516,6 +557,7 @@ def handle_text_steps(message):
             user_states[user_id] = None
         else:
             user_points[user_id] -= required_points
+            save_data()
             link = user_temp_data.get(user_id, {}).get('link', 'نەدیار')
             
             user_states[user_id] = None
