@@ -41,10 +41,6 @@ last_bonus_date = {int(k): v for k, v in db.get("last_bonus", {}).items()}
 invited_counts = {int(k): v for k, v in db.get("invited", {}).items()}
 vip_users = {int(k): v for k, v in db.get("vip", {}).items()}
 
-for uid in list(user_points.keys()):
-    user_points[uid] = 1000
-save_data()
-
 user_states = {}
 user_temp_data = {}
 iraq_tz = timezone(timedelta(hours=3))
@@ -133,13 +129,44 @@ def callback_handler(call):
         save_data()
 
     if call.data == "menu_fake":
-        text = "🎁 **بەشێ فەیک**\nفەرموو خزمەتگوزاریا خۆ هەڵبژێرە:"
+        text = "🎁 **بەشێ فەیک**\nفەرموو بەشەک هەڵبژێرە:"
         markup = InlineKeyboardMarkup()
-        markup.add(InlineKeyboardButton("🎁 FREE (100 مێمبەر)", callback_data="free_telegram_100"))
-        markup.add(InlineKeyboardButton("✈️ تەلەگرام", callback_data="fake_telegram"))
-        markup.add(InlineKeyboardButton("🎵 تیکتۆک", callback_data="fake_tiktok"))
-        markup.add(InlineKeyboardButton("🔙 ڤەگەر", callback_data="back_home"))
+        # دروستکرنا دوو ڕێز (دوو دوگمە د هەر ڕێزەکێ دا)
+        row1 = [
+            InlineKeyboardButton("TELEGRAM", callback_data="fake_telegram"),
+            InlineKeyboardButton("TIKTOK", callback_data="fake_tiktok")
+        ]
+        row2 = [
+            InlineKeyboardButton("INSTGRAM", callback_data="fake_instagram"),
+            InlineKeyboardButton("چاڤەرێبن", callback_data="fake_wait")
+        ]
+        row3 = [
+            InlineKeyboardButton("🎁 FREE (100 مێمبەر)", callback_data="free_telegram_100")
+        ]
+        row4 = [
+            InlineKeyboardButton("🔙 ڤەگەر", callback_data="back_home")
+        ]
+        markup.add(*row1)
+        markup.add(*row2)
+        markup.add(*row3)
+        markup.add(*row4)
         bot.edit_message_text(text, call.message.chat.id, call.message.message_id, reply_markup=markup, parse_mode="Markdown")
+
+    elif call.data in ["fake_telegram", "fake_tiktok", "fake_instagram"]:
+        section_names = {
+            "fake_telegram": "TELEGRAM (فەیک)",
+            "fake_tiktok": "TIKTOK (فەیک)",
+            "fake_instagram": "INSTGRAM (فەیک)"
+        }
+        s_name = section_names.get(call.data)
+        text = f"🎁 **بەشێ {s_name}**\nفەرموو لینکێ خۆ بنێرە:"
+        user_states[user_id] = "WAITING_FAKE_SECTION_LINK"
+        user_temp_data[user_id] = {'service': s_name}
+        bot.answer_callback_query(call.id)
+        bot.send_message(call.message.chat.id, text, parse_mode="Markdown")
+
+    elif call.data == "fake_wait":
+        bot.answer_callback_query(call.id, "⏳ ئەڤ بەشە ل داهاتوویێ دێ هێتە زێدەکرن، چاڤەرێ بن!", show_alert=True)
 
     elif call.data == "free_telegram_100":
         user_states[user_id] = "WAITING_FREE_LINK"
@@ -194,7 +221,7 @@ def callback_handler(call):
             bot.answer_callback_query(call.id, "⚠️ تە دیاریا ئەڤرۆ وەرگرتییە!", show_alert=True)
         else:
             last_bonus_date[user_id] = current_date
-            user_points[user_id] += 10
+            user_points[user_id] = user_points.get(user_id, 1000) + 10
             save_data()
             bot.answer_callback_query(call.id, f"🎉 پیرۆزە! 10 پۆینت زێدەبوون. کۆما پۆینتا: {user_points[user_id]}", show_alert=True)
         show_main_menu(call.message.chat.id, call.message.message_id)
@@ -242,6 +269,20 @@ def handle_text(message):
             f"📌 خزمەتگوزاری: {service}\n"
             f"🔗 لینک: {link}\n"
             f"🔢 ژمارە (1-100): {num}"
+        )
+        bot.send_message(ADMIN_ID, admin_msg, parse_mode="Markdown")
+
+    elif state == "WAITING_FAKE_SECTION_LINK":
+        link = message.text
+        service = user_temp_data.get(user_id, {}).get('service', 'فەیک')
+        user_states[user_id] = None
+
+        bot.send_message(message.chat.id, f"✅ داخوازیا تە بۆ ({service}) ب سەرکەفتیانە هاتە وەرگرتن!")
+
+        admin_msg = (
+            f"🎁 **داخوازەکا نووی ({service})**\n\n"
+            f"👤 ئایدی: `{user_id}`\n"
+            f"🔗 لینک: {link}"
         )
         bot.send_message(ADMIN_ID, admin_msg, parse_mode="Markdown")
 
