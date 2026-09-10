@@ -8,7 +8,6 @@ import time
 
 TOKEN = "8842143426:AAEt-8OhhfrpmDeN1ibXyn3DYYGb2tCqTvs"
 ADMIN_ID = 8832347891
-CHANNELS = ["@TURSE_INFO", "@TORSEII"]
 ADMIN_USERNAME = "@T_U_R_S_E"
 
 bot = telebot.TeleBot(TOKEN)
@@ -72,30 +71,6 @@ user_states = {}
 user_temp_data = {}
 iraq_tz = timezone(timedelta(hours=3))
 
-def check_user_membership(user_id):
-    for channel in CHANNELS:
-        try:
-            member = bot.get_chat_member(channel, user_id)
-            if member.status not in ['member', 'administrator', 'creator']:
-                return False
-        except:
-            return False  
-    return True
-
-def show_force_sub_message(chat_id):
-    text = (
-        "⚠️ **بۆ بەکارئینانا بۆتی، پێدڤیە بەری هەر شتەکی جۆینێ هەردوو کەناڵێن مە ببی!**\n\n"
-        "👇 تکایە سەرەتا جۆینێ کەناڵان بکە، پاشان دوگمەیا (پشکنینا جۆینبوونێ) کلیک بکە:"
-    )
-    markup = InlineKeyboardMarkup()
-    markup.add(InlineKeyboardButton("JOIN 🌐 (TURSE_INFO)", url="https://t.me/TURSE_INFO"))
-    markup.add(InlineKeyboardButton("JOIN 🌐 (TORSEII)", url="https://t.me/TORSEII"))
-    markup.add(InlineKeyboardButton("✅ پشکنینا جۆینبوونێ (Check)", callback_data="check_membership"))
-    try:
-        bot.send_message(chat_id, text, reply_markup=markup, parse_mode="Markdown")
-    except:
-        pass
-
 # background thread بۆ پشکنینا خۆکار یا VIP و کێشانا پۆینتان پشتی حەفتیەکێ
 def background_vip_checker():
     while True:
@@ -107,7 +82,6 @@ def background_vip_checker():
                     if exp_str:
                         exp_time = datetime.fromisoformat(exp_str)
                         if now >= exp_time:
-                            # حەفتی تەواو بوو، با پۆینت ژێ بچن
                             current_pts = user_points.get(uid, 1000)
                             if current_pts >= 1200:
                                 user_points[uid] = current_pts - 1200
@@ -118,7 +92,6 @@ def background_vip_checker():
                                 except:
                                     pass
                             else:
-                                # پۆینت نەباسن، VIP لێ هەڵوەشینە
                                 vip_users[uid] = False
                                 vip_expiry_date.pop(uid, None)
                                 save_data()
@@ -128,7 +101,7 @@ def background_vip_checker():
                                     pass
         except Exception as e:
             print(f"Error in background checker: {e}")
-        time.sleep(3600) # هه‌ر دەمژمێرەکێ جارەکێ پشکنینێ دکەت
+        time.sleep(3600)
 
 threading.Thread(target=background_vip_checker, daemon=True).start()
 
@@ -136,10 +109,6 @@ threading.Thread(target=background_vip_checker, daemon=True).start()
 def send_welcome(message):
     user_id = message.from_user.id
     
-    if not check_user_membership(user_id):
-        show_force_sub_message(message.chat.id)
-        return
-
     args = message.text.split()
     if len(args) > 1 and args[1].isdigit():
         ref_id = int(args[1])
@@ -190,22 +159,6 @@ def show_main_menu(chat_id, message_id=None, is_new=False):
 @bot.callback_query_handler(func=lambda call: True)
 def callback_handler(call):
     user_id = call.from_user.id
-
-    if call.data == "check_membership":
-        if check_user_membership(user_id):
-            bot.answer_callback_query(call.id, "✅ سوپاس، تە جۆینێ هەردوو کەناڵان کر!", show_alert=True)
-            if user_id not in user_points:
-                user_points[user_id] = 1000
-                save_data()
-            show_main_menu(call.message.chat.id, call.message.message_id, is_new=False)
-        else:
-            bot.answer_callback_query(call.id, "❌ هێشتا تە جۆینێ هەردوو کەناڵان نەکریە!", show_alert=True)
-        return
-
-    if not check_user_membership(user_id):
-        bot.answer_callback_query(call.id, "⚠️ پێدڤیە سەرەتا جۆینێ هەردوو کەناڵان ببی!", show_alert=True)
-        show_force_sub_message(call.message.chat.id)
-        return
 
     if user_id not in user_points:
         user_points[user_id] = 1000
@@ -507,10 +460,6 @@ def callback_handler(call):
 @bot.message_handler(content_types=['text', 'photo', 'document'], func=lambda message: True)
 def handle_text(message):
     user_id = message.from_user.id
-    if not check_user_membership(user_id):
-        show_force_sub_message(message.chat.id)
-        return
-
     state = user_states.get(user_id)
     text_input = message.text.strip() if message.text else ""
 
