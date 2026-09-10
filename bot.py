@@ -7,6 +7,7 @@ import os
 TOKEN = "8842143426:AAEt-8OhhfrpmDeN1ibXyn3DYYGb2tCqTvs"
 ADMIN_ID = 8832347891
 CHANNEL_USERNAME = "@TURSE_INFO"
+ADMIN_USERNAME = "@T_U_R_S_E"
 
 bot = telebot.TeleBot(TOKEN)
 DATA_FILE = "bot_data.json"
@@ -64,6 +65,15 @@ def check_user_membership(user_id):
 def send_welcome(message):
     user_id = message.from_user.id
     
+    # Check for referral argument
+    args = message.text.split()
+    if len(args) > 1 and args[1].isdigit():
+        ref_id = int(args[1])
+        if ref_id != user_id and ref_id in user_points:
+            # Check if this user was already referred
+            if user_id not in used_codes_data.get(ref_id, []): # using a simple tracking or just check invited list
+                pass # can add logic if needed
+
     if not check_user_membership(user_id):
         show_force_sub_message(message.chat.id)
         return
@@ -98,10 +108,8 @@ def show_main_menu(chat_id, message_id=None, is_new=False):
     markup = InlineKeyboardMarkup()
     markup.add(InlineKeyboardButton("🎁 بەشێ فەیک", callback_data="menu_fake"))
     markup.add(InlineKeyboardButton("بەشێ vip", callback_data="vip"))
+    markup.add(InlineKeyboardButton("🧠🫂 کۆمکرنا پوینتان", callback_data="collect_points_menu"))
     markup.add(InlineKeyboardButton("🛒 کڕینا پۆینتان", callback_data="buy_points"))
-    markup.add(InlineKeyboardButton("🎟 بکارئینانا کۆدێ دیاری", callback_data="code"))
-    markup.add(InlineKeyboardButton("🎁 دیاریا ڕۆژانە (+10 پۆینت)", callback_data="daily_bonus"))
-    markup.add(InlineKeyboardButton("🌐 لینکێ ئینڤایتێ (Ref)", callback_data="ref_link"))
     
     if is_new:
         bot.send_message(chat_id, text, reply_markup=markup)
@@ -165,6 +173,18 @@ def callback_handler(call):
     elif call.data in ["vip_tiktok", "vip_instagram"]:
         bot.answer_callback_query(call.id, "⏳ تیکتۆک و ینستگرام چاڤەرێبن دێ ڤان نزیکان ڤەبیت!", show_alert=True)
 
+    elif call.data == "collect_points_menu":
+        text = (
+            "🧠🫂 **بەشێ کۆمکرنا پۆینتان**\n\n"
+            "فەرموو ڕێگایەکێ هەڵبژێرە بۆ زێدەکرنا پۆینتێن خۆ:"
+        )
+        markup = InlineKeyboardMarkup()
+        markup.add(InlineKeyboardButton("🎁 دیاریا ڕۆژانە (+10 پۆینت)", callback_data="daily_bonus"))
+        markup.add(InlineKeyboardButton("🎟 بکارئینانا کۆدێ دیاری", callback_data="code"))
+        markup.add(InlineKeyboardButton("🌐 لینکێ ئینڤایتێ (Ref)", callback_data="ref_link"))
+        markup.add(InlineKeyboardButton("🔙 ڤەگەر", callback_data="back_home"))
+        bot.edit_message_text(text, call.message.chat.id, call.message.message_id, reply_markup=markup, parse_mode="Markdown")
+
     elif call.data == "buy_points":
         text = (
             "🛒 **بەشێ کڕینا پۆینتان**\n\n"
@@ -173,7 +193,7 @@ def callback_handler(call):
             "• **FIB**\n"
             "• **FastPay**\n"
             "• **کۆڕەک (Korek)**\n\n"
-            "👇 بۆ کڕینا پۆینتان، دوگمەیا خوارێ کلیک بکە یان ژمارەیا خۆ/وەصلا خۆ بۆ ڕێڤەبەری بنێرە:"
+            "👇 بۆ کڕینا پۆینتان، دوگمەیا خوارێ کلیک بکە:"
         )
         markup = InlineKeyboardMarkup()
         markup.add(InlineKeyboardButton("📩 داخوازی کڕینێ (رەوانەکرنا وەسڵ/ژمارە)", callback_data="request_buy_points"))
@@ -183,7 +203,11 @@ def callback_handler(call):
     elif call.data == "request_buy_points":
         user_states[user_id] = "WAITING_BUY_RECEIPT"
         bot.answer_callback_query(call.id)
-        bot.send_message(call.message.chat.id, "📥 وێنەیێ وەسڵێ خۆ یان ژمارە و ناوەندا پارەدانێ (FIB, FastPay, Korek) بۆ مە بنێرە:")
+        bot.send_message(
+            call.message.chat.id, 
+            f"📥 وێنەیێ وەسڵێ خۆ یان ژمارە و ناوەندا پارەدانێ (FIB, FastPay, Korek) بۆ مە بنێرە:\n\n"
+            f"⚠️ **تێبینی:** پشتی هناردنێ، لای خۆ ڤە نامەیەکێ بڕێڤەبەری ژی ڕوانە بکە: {ADMIN_USERNAME}"
+        )
 
     elif call.data == "menu_fake":
         text = "🎁 **بەشێ فەیک**\nفەرموو بەشەک هەڵبژێرە:"
@@ -291,7 +315,21 @@ def callback_handler(call):
             user_points[user_id] = user_points.get(user_id, 1000) + 10
             save_data()
             bot.answer_callback_query(call.id, f"🎉 پیرۆزە! 10 پۆینت زێدەبوون. کۆما پۆینتا: {user_points[user_id]}", show_alert=True)
-        show_main_menu(call.message.chat.id, call.message.message_id)
+        
+        # Go back to collect points menu or home
+        text = (
+            "🧠🫂 **بەشێ کۆمکرنا پۆینتان**\n\n"
+            "فەرموو ڕێگایەکێ هەڵبژێرە بۆ زێدەکرنا پۆینتێن خۆ:"
+        )
+        markup = InlineKeyboardMarkup()
+        markup.add(InlineKeyboardButton("🎁 دیاریا ڕۆژانە (+10 پۆینت)", callback_data="daily_bonus"))
+        markup.add(InlineKeyboardButton("🎟 بکارئینانا کۆدێ دیاری", callback_data="code"))
+        markup.add(InlineKeyboardButton("🌐 لینکێ ئینڤایتێ (Ref)", callback_data="ref_link"))
+        markup.add(InlineKeyboardButton("🔙 ڤەگەر", callback_data="back_home"))
+        try:
+            bot.edit_message_text(text, call.message.chat.id, call.message.message_id, reply_markup=markup, parse_mode="Markdown")
+        except:
+            pass
 
     elif call.data == "ref_link":
         bot_info = bot.get_me()
@@ -313,7 +351,11 @@ def handle_text(message):
 
     if state == "WAITING_BUY_RECEIPT":
         user_states[user_id] = None
-        bot.send_message(message.chat.id, "✅ وەسڵ / داخوازییا تە گەهشتە رێڤەبەری. دێ زوو زوو هێتە پشکنتین و پۆینت بۆ تە هاتنە زێدەکرن!")
+        bot.send_message(
+            message.chat.id, 
+            f"✅ وەسڵ / داخوازییا تە گەهشتە رێڤەبەری.\n"
+            f"👇 تکایە نامەیەکێ بڕێڤەبەری ژی بکە و ئاگادار بکە: {ADMIN_USERNAME}"
+        )
         
         now_iraq = datetime.now(iraq_tz)
         time_str = now_iraq.strftime('%H:%M:%S')
@@ -323,6 +365,7 @@ def handle_text(message):
             f"🛒 **[داخوازەکا نووی بۆ کڕینا پۆینتان]**\n\n"
             f"👤 ئایدی: `{user_id}`\n"
             f"👤 ناڤ: {message.from_user.first_name}\n"
+            f"🔗 یوزرنەیم: @{message.from_user.username if message.from_user.username else 'نەدیار'}\n"
             f"📅 رۆژ: {date_str} | ⏰ دەم: {time_str}"
         )
         try:
