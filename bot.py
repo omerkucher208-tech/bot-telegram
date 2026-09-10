@@ -4,7 +4,7 @@ from datetime import datetime, timezone, timedelta
 import json
 import os
 
-TOKEN = "8842143426:AAEseYCtaX2t2TqI1mWuTrARWWu3RazWwUM"
+TOKEN = "8842143426:AAEt-8OhhfrpmDeN1ibXyn3DYYGb2tCqTvs"
 ADMIN_ID = 8832347891
 CHANNEL_USERNAME = "@TURSE_INFO"
 
