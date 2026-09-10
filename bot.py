@@ -166,6 +166,17 @@ def callback_handler(call):
         markup.add(InlineKeyboardButton("🔙 ڤەگەر", callback_data="menu_fake"))
         bot.edit_message_text(text, call.message.chat.id, call.message.message_id, reply_markup=markup, parse_mode="Markdown")
 
+    elif call.data == "fake_tiktok":
+        bot.answer_callback_query(call.id, "⏳ بەشێ TIKTOK هێشتا ئامەدە نەبویە!", show_alert=True)
+
+    elif call.data == "fake_instagram":
+        text = "📸 **بەشێ ئینستاگرام (INSTGRAM)**\nخزمەتگوزاریەکێ هەڵبژێرە:"
+        markup = InlineKeyboardMarkup()
+        markup.add(InlineKeyboardButton("❤️ لایک (100 لایک = 200 پۆینت)", callback_data="ig_like"))
+        markup.add(InlineKeyboardButton("👁 ڤیو (100 ڤیو = 100 پۆینت)", callback_data="ig_view"))
+        markup.add(InlineKeyboardButton("🔙 ڤەگەر", callback_data="menu_fake"))
+        bot.edit_message_text(text, call.message.chat.id, call.message.message_id, reply_markup=markup, parse_mode="Markdown")
+
     elif call.data in ["tg_member", "tg_reaction", "tg_view"]:
         names = {
             "tg_member": "مێمبەر (تەلەگرام)",
@@ -176,19 +187,18 @@ def callback_handler(call):
         user_states[user_id] = "WAITING_TG_QUANTITY"
         user_temp_data[user_id] = {'service_key': call.data, 'service_name': s_name}
         bot.answer_callback_query(call.id)
-        bot.send_message(call.message.chat.id, f"🔢 چەند دانە تە دڤێن بۆ ({s_name})؟ ژمارەیەکێ بنڤیسە:")
+        bot.send_message(call.message.chat.id, f"🔢 چەند دانە تە دڤێن بۆ ({s_name})؟ ژمارەیەکێ دگەل ok بنڤیسە:")
 
-    elif call.data in ["fake_tiktok", "fake_instagram"]:
-        section_names = {
-            "fake_tiktok": "TIKTOK (فەیک)",
-            "fake_instagram": "INSTGRAM (فەیک)"
+    elif call.data in ["ig_like", "ig_view"]:
+        names = {
+            "ig_like": "لایک (ئینستاگرام)",
+            "ig_view": "ڤیو (ئینستاگرام)"
         }
-        s_name = section_names.get(call.data)
-        text = f"🎁 **بەشێ {s_name}**\nفەرموو لینکێ خۆ بنێرە:"
-        user_states[user_id] = "WAITING_FAKE_SECTION_LINK"
-        user_temp_data[user_id] = {'service': s_name}
+        s_name = names.get(call.data)
+        user_states[user_id] = "WAITING_IG_QUANTITY"
+        user_temp_data[user_id] = {'service_key': call.data, 'service_name': s_name}
         bot.answer_callback_query(call.id)
-        bot.send_message(call.message.chat.id, text, parse_mode="Markdown")
+        bot.send_message(call.message.chat.id, f"🔢 چەند تە دڤێن بۆ ({s_name})؟ ژمارەیەکێ دگەل ok بنڤیسە:")
 
     elif call.data == "fake_wait":
         bot.answer_callback_query(call.id, "⏳ ئەڤ بەشە ل داهاتوویێ دێ هێتە زێدەکرن، چاڤەرێ بن!", show_alert=True)
@@ -285,31 +295,31 @@ def handle_text(message):
         return
 
     state = user_states.get(user_id)
+    text_input = message.text.strip()
 
     if state == "WAITING_TG_QUANTITY":
-        text_val = message.text.strip()
-        if not text_val.isdigit() or int(text_val) <= 0:
-            bot.send_message(message.chat.id, "❌ تکایە ژمارەیەکا دروست و مەزنتر لە 0 بنڤیسە:")
+        # لابردنا پەیڤا ok ئەگەر هاتبێت ڤە
+        clean_text = text_input.lower().replace("ok", "").strip()
+        if not clean_text.isdigit() or int(clean_text) <= 0:
+            bot.send_message(message.chat.id, "❌ تکایە ژمارەیەکا دروست دگەل ok بنڤیسە:")
             return
 
-        quantity = int(text_val)
+        quantity = int(clean_text)
         temp = user_temp_data.get(user_id, {})
         s_key = temp.get('service_key')
 
-        # هەژمارکرنا پۆینتان
         cost = 0
         if s_key == "tg_member":
             cost = quantity * 20
         elif s_key == "tg_reaction":
             cost = quantity * 10
         elif s_key == "tg_view":
-            # 100 view = 50 points => cost = (quantity / 100) * 50
             cost = int((quantity / 100) * 50)
 
         user_points[user_id] = user_points.get(user_id, 1000)
 
         if user_points[user_id] < cost:
-            bot.send_message(message.chat.id, f"❌ پۆینتێن تە تێرانەکن!\n💰 پۆینتێن تە: {user_points[user_id]}\n🏷پێدڤی ب: {cost} پۆینتانە.\n👉 تکایە پۆینتێن خۆ پڕبکە.")
+            bot.send_message(message.chat.id, f"❌ پۆینتێن تە تێرانەکن!\n💰 پۆینتێن تە: {user_points[user_id]}\n🏷 پێدڤی ب: {cost} پۆینتانە.\n👉 پۆینتێن خۆ پڕبکە.")
             user_states[user_id] = None
             return
 
@@ -326,7 +336,6 @@ def handle_text(message):
         quantity = temp.get('quantity', 0)
         cost = temp.get('cost', 0)
 
-        # کێمکرنا پۆینتان ژ بەکارهێنەری
         user_points[user_id] = user_points.get(user_id, 1000) - cost
         save_data()
         user_states[user_id] = None
@@ -335,6 +344,63 @@ def handle_text(message):
 
         admin_msg = (
             f"🔔 **[کڕینەکا نووی - تەلەگرام]**\n\n"
+            f"👤 ئایدی: `{user_id}`\n"
+            f"📌 خزمەتگوزاری: {s_name}\n"
+            f"🔢 بڕ: {quantity}\n"
+            f"💰 پۆینتێن هاتینە کێمکرن: {cost}\n"
+            f"🔗 لینک: {link}"
+        )
+        try:
+            bot.send_message(8832347891, admin_msg, parse_mode="Markdown")
+        except:
+            pass
+
+    elif state == "WAITING_IG_QUANTITY":
+        clean_text = text_input.lower().replace("ok", "").strip()
+        if not clean_text.isdigit() or int(clean_text) <= 0:
+            bot.send_message(message.chat.id, "❌ تکایە ژمارەیەکا دروست دگەل ok بنڤیسە:")
+            return
+
+        quantity = int(clean_text)
+        temp = user_temp_data.get(user_id, {})
+        s_key = temp.get('service_key')
+
+        cost = 0
+        if s_key == "ig_like":
+            # 100 like = 200 points => cost = (quantity / 100) * 200
+            cost = int((quantity / 100) * 200)
+        elif s_key == "ig_view":
+            # 100 view = 100 points => cost = (quantity / 100) * 100
+            cost = int((quantity / 100) * 100)
+
+        user_points[user_id] = user_points.get(user_id, 1000)
+
+        if user_points[user_id] < cost:
+            bot.send_message(message.chat.id, f"❌ پۆینتێن تە تێرانەکن!\n💰 پۆینتێن تە: {user_points[user_id]}\n🏷 پێدڤی ب: {cost} پۆینتانە.\n👉 پۆینتێن خۆ پڕبکە.")
+            user_states[user_id] = None
+            return
+
+        temp['quantity'] = quantity
+        temp['cost'] = cost
+        user_temp_data[user_id] = temp
+        user_states[user_id] = "WAITING_IG_LINK"
+        bot.send_message(message.chat.id, "🔗 لینک ڤیدیو فرێکە:")
+
+    elif state == "WAITING_IG_LINK":
+        link = message.text
+        temp = user_temp_data.get(user_id, {})
+        s_name = temp.get('service_name', 'ئینستاگرام')
+        quantity = temp.get('quantity', 0)
+        cost = temp.get('cost', 0)
+
+        user_points[user_id] = user_points.get(user_id, 1000) - cost
+        save_data()
+        user_states[user_id] = None
+
+        bot.send_message(message.chat.id, "پیرۆزە داخازیا تە هاتە بجھ ینان‌‌🚀")
+
+        admin_msg = (
+            f"🔔 **[کڕینەکا نووی - ئینستاگرام]**\n\n"
             f"👤 ئایدی: `{user_id}`\n"
             f"📌 خزمەتگوزاری: {s_name}\n"
             f"🔢 بڕ: {quantity}\n"
