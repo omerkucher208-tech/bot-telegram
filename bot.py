@@ -6,7 +6,7 @@ import os
 import threading
 import time
 
-TOKEN = "8842143426:AAEt-8OhhfrpmDeN1ibXyn3DYYGb2tCqTvs"
+TOKEN = "8679513381:AAFIGFhKxVVavxoXOAVlE49b8DvBeY_M4LM"
 ADMIN_ID = 8832347891
 CHANNELS = ["@TURSE_INFO", "@TORSEII"]
 ADMIN_USERNAME = "@T_U_R_S_E"
@@ -96,7 +96,6 @@ def show_force_sub_message(chat_id):
     except:
         pass
 
-# background thread بۆ پشکنینا خۆکار یا VIP و کێشانا پۆینتان پشتی حەفتیەکێ
 def background_vip_checker():
     while True:
         try:
@@ -233,6 +232,11 @@ def callback_handler(call):
             pass
 
     elif call.data in ["vip_tg_vote", "vip_tg_member"]:
+        current_pts = user_points.get(user_id, 1000)
+        if current_pts < 1200:
+            bot.answer_callback_query(call.id, "❌ بۆ بکارئینانا بەشێ VIP، پێدڤیە کێمتر نە ژ 1200 پۆینتان هەبن!", show_alert=True)
+            return
+
         names = {
             "vip_tg_vote": "دەنگ / دلک (تەلەگرام VIP)",
             "vip_tg_member": "مێمبەر 60 رۆژ زەمان (تەلەگرام VIP)"
