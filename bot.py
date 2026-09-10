@@ -94,7 +94,6 @@ def show_main_menu(chat_id, message_id=None, is_new=False):
     )
     
     markup = InlineKeyboardMarkup()
-    markup.add(InlineKeyboardButton("🎁 بەشێ FREE", callback_data="menu_free"))
     markup.add(InlineKeyboardButton("🎁 بەشێ فەیک", callback_data="menu_fake"))
     markup.add(InlineKeyboardButton("⭐ ڤەکرنا بەشێ VIP", callback_data="vip"))
     markup.add(InlineKeyboardButton("🌟 تورسی تایبەت", callback_data="special_tursi"))
@@ -133,10 +132,12 @@ def callback_handler(call):
         user_points[user_id] = 1000
         save_data()
 
-    if call.data == "menu_free":
-        text = "🎁 **بەشێ FREE**\nفەرموو خزمەتگوزاریا تەلەگرام هەڵبژێرە:"
+    if call.data == "menu_fake":
+        text = "🎁 **بەشێ فەیک**\nفەرموو خزمەتگوزاریا خۆ هەڵبژێرە:"
         markup = InlineKeyboardMarkup()
-        markup.add(InlineKeyboardButton("✈️ تەلەگرام (100 مێمبەر)", callback_data="free_telegram_100"))
+        markup.add(InlineKeyboardButton("🎁 FREE (100 مێمبەر)", callback_data="free_telegram_100"))
+        markup.add(InlineKeyboardButton("✈️ تەلەگرام", callback_data="fake_telegram"))
+        markup.add(InlineKeyboardButton("🎵 تیکتۆک", callback_data="fake_tiktok"))
         markup.add(InlineKeyboardButton("🔙 ڤەگەر", callback_data="back_home"))
         bot.edit_message_text(text, call.message.chat.id, call.message.message_id, reply_markup=markup, parse_mode="Markdown")
 
@@ -236,7 +237,7 @@ def handle_text(message):
         bot.send_message(message.chat.id, "✅ داخوازیا تە هاتە جێبەجێکردن")
 
         admin_msg = (
-            f"🎁 **داخوازەکا نووی (بەشێ FREE)**\n\n"
+            f"🎁 **داخوازەکا نووی (بەشێ FREE - فەیک)**\n\n"
             f"👤 ئایدی: `{user_id}`\n"
             f"📌 خزمەتگوزاری: {service}\n"
             f"🔗 لینک: {link}\n"
