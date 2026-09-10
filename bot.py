@@ -6,7 +6,7 @@ import os
 
 TOKEN = "8842143426:AAEt-8OhhfrpmDeN1ibXyn3DYYGb2tCqTvs"
 ADMIN_ID = 8832347891
-CHANNEL_USERNAME = "@TURSE_INFO"
+CHANNELS = ["@TURSE_INFO", "@TORSEII"]
 ADMIN_USERNAME = "@T_U_R_S_E"
 
 bot = telebot.TeleBot(TOKEN)
@@ -68,19 +68,34 @@ user_temp_data = {}
 iraq_tz = timezone(timedelta(hours=3))
 
 def check_user_membership(user_id):
-    try:
-        member = bot.get_chat_member(CHANNEL_USERNAME, user_id)
-        if member.status in ['member', 'administrator', 'creator']:
-            return True
-    except:
-        return True  
-    return False
+    for channel in CHANNELS:
+        try:
+            member = bot.get_chat_member(channel, user_id)
+            if member.status not in ['member', 'administrator', 'creator']:
+                return False
+        except:
+            return False  
+    return True
+
+def show_force_sub_message(chat_id):
+    text = (
+        "⚠️ **بۆ بەکارئینانا بۆتی، پێدڤیە بەری هەر شتەکی جۆینێ هەردوو کەناڵێن مە ببی!**\n\n"
+        "👇 تکایە سەرەتا جۆینێ کەناڵان بکە، پاشان دوگمەیا (پشکنینا جۆینبوونێ) کلیک بکە:"
+    )
+    markup = InlineKeyboardMarkup()
+    markup.add(InlineKeyboardButton("JOIN 🌐 (TURSE_INFO)", url="https://t.me/TURSE_INFO"))
+    markup.add(InlineKeyboardButton("JOIN 🌐 (TORSEII)", url="https://t.me/TORSEII"))
+    markup.add(InlineKeyboardButton("✅ پشکنینا جۆینبوونێ (Check)", callback_data="check_membership"))
+    bot.send_message(chat_id, text, reply_markup=markup, parse_mode="Markdown")
 
 @bot.message_handler(commands=['start'])
 def send_welcome(message):
     user_id = message.from_user.id
     
-    # Check for referral argument
+    if not check_user_membership(user_id):
+        show_force_sub_message(message.chat.id)
+        return
+
     args = message.text.split()
     if len(args) > 1 and args[1].isdigit():
         ref_id = int(args[1])
@@ -90,26 +105,12 @@ def send_welcome(message):
                 invited_counts[ref_id] = invited_counts.get(ref_id, 0) + 1
                 save_data()
 
-    if not check_user_membership(user_id):
-        show_force_sub_message(message.chat.id)
-        return
-
     if user_id not in user_points:
         user_points[user_id] = 1000
         save_data()
         
     user_states[user_id] = None
     show_main_menu(message.chat.id, message.message_id if hasattr(message, 'message_id') else None, is_new=True)
-
-def show_force_sub_message(chat_id):
-    text = (
-        "⚠️ **بۆ بەکارئینانا بۆتی، پێدڤیە بەری هەر شتەکی جۆینێ کەناڵا مە ببی!**\n\n"
-        "👇 تکایە سەرەتا جۆینێ کەناڵی بکە، پاشان دوگمەیا (پشکنینا جۆینبوونێ) کلیک بکە:"
-    )
-    markup = InlineKeyboardMarkup()
-    markup.add(InlineKeyboardButton("JOIN 🌐", url="https://t.me/TURSE_INFO"))
-    markup.add(InlineKeyboardButton("✅ پشکنینا جۆینبوونێ (Check)", callback_data="check_membership"))
-    bot.send_message(chat_id, text, reply_markup=markup, parse_mode="Markdown")
 
 def show_main_menu(chat_id, message_id=None, is_new=False):
     user_id = chat_id
@@ -142,17 +143,18 @@ def callback_handler(call):
 
     if call.data == "check_membership":
         if check_user_membership(user_id):
-            bot.answer_callback_query(call.id, "✅ سوپاس، تە جۆین کر!", show_alert=True)
+            bot.answer_callback_query(call.id, "✅ سوپاس، تە جۆینێ هەردوو کەناڵان کر!", show_alert=True)
             if user_id not in user_points:
                 user_points[user_id] = 1000
                 save_data()
             show_main_menu(call.message.chat.id, call.message.message_id, is_new=False)
         else:
-            bot.answer_callback_query(call.id, "❌ هێشتا تە جۆین نەکریە!", show_alert=True)
+            bot.answer_callback_query(call.id, "❌ هێشتا تە جۆینێ هەردوو کەناڵان نەکریە!", show_alert=True)
         return
 
     if not check_user_membership(user_id):
-        bot.answer_callback_query(call.id, "⚠️ پێدڤیە سەرەتا جۆینێ کەناڵی ببی!", show_alert=True)
+        bot.answer_callback_query(call.id, "⚠️ پێدڤیە سەرەتا جۆینێ هەردوو کەناڵان ببی!", show_alert=True)
+        show_force_sub_message(call.message.chat.id)
         return
 
     if user_id not in user_points:
@@ -212,7 +214,6 @@ def callback_handler(call):
         requests_count = total_requests.get(user_id, 0)
         sent_points = sent_points_count.get(user_id, 0)
 
-        # Top 3 invite referrers
         sorted_invited = sorted(invited_counts.items(), key=lambda x: x[1], reverse=True)
         top_text = ""
         for i in range(3):
@@ -251,7 +252,6 @@ def callback_handler(call):
             vip_users[user_id] = True
             save_data()
             bot.answer_callback_query(call.id, "🎉 پیرۆزە! تو بوویە خاوەن ئەکاونتا VIP ⭐", show_alert=True)
-            # Refresh account info view
             callback_handler(call)
 
     elif call.data == "buy_points":
@@ -383,7 +383,6 @@ def callback_handler(call):
             last_bonus_date[user_id] = current_date
             user_points[user_id] = user_points.get(user_id, 1000) + 10
             
-            # Update stats
             bonus_points_earned[user_id] = bonus_points_earned.get(user_id, 0) + 10
             total_gifts_claimed[user_id] = total_gifts_claimed.get(user_id, 0) + 1
             save_data()
