@@ -10,7 +10,6 @@ CHANNEL_USERNAME = "@TURSE_INFO"
 
 bot = telebot.TeleBot(TOKEN)
 
-# فایڵێن هەڵگرتنام داتای
 DATA_FILE = "bot_data.json"
 
 def load_data():
@@ -37,12 +36,16 @@ def save_data():
     with open(DATA_FILE, "w", encoding="utf-8") as f:
         json.dump(data, f, ensure_ascii=False, indent=4)
 
-# بارکرنا داتایان دەما بۆت دست پێدکەت
 db = load_data()
 user_points = {int(k): v for k, v in db.get("points", {}).items()}
 last_bonus_date = {int(k): v for k, v in db.get("last_bonus", {}).items()}
 invited_counts = {int(k): v for k, v in db.get("invited", {}).items()}
 vip_users = {int(k): v for k, v in db.get("vip", {}).items()}
+
+# بۆ ئەوەی پۆینتێن هەموو کەسێن هەی یەکسەر ببنە 1000
+for uid in user_points:
+    user_points[uid] = 1000
+save_data()
 
 user_states = {}
 user_temp_data = {}
@@ -71,12 +74,12 @@ def send_welcome(message):
     if len(args) > 1 and args[1].isdigit():
         ref_id = int(args[1])
         if ref_id != user_id and user_id not in user_points:
-            user_points[ref_id] = user_points.get(ref_id, 1487) + 100
+            user_points[ref_id] = user_points.get(ref_id, 1000) + 100
             invited_counts[ref_id] = invited_counts.get(ref_id, 0) + 1
             save_data()
 
     if user_id not in user_points:
-        user_points[user_id] = 1487
+        user_points[user_id] = 1000
         save_data()
         
     user_states[user_id] = None
@@ -94,7 +97,7 @@ def show_force_sub_message(chat_id):
 
 def show_main_menu(chat_id, message_id=None, is_new=False):
     user_id = chat_id
-    points = user_points.get(user_id, 1487)
+    points = user_points.get(user_id, 1000)
     
     text = (
         "💎 - بەخێرهاتن بۆ بۆتا دەنگدانا کوردی\n"
@@ -126,7 +129,7 @@ def callback_handler(call):
         if check_user_membership(user_id):
             bot.answer_callback_query(call.id, "✅ سوپاس، تە جۆین کر! بۆت بۆ تە ڤەبوو.", show_alert=True)
             if user_id not in user_points:
-                user_points[user_id] = 1487
+                user_points[user_id] = 1000
                 save_data()
             show_main_menu(call.message.chat.id, call.message.message_id, is_new=False)
         else:
@@ -138,7 +141,7 @@ def callback_handler(call):
         return
 
     if user_id not in user_points:
-        user_points[user_id] = 1487
+        user_points[user_id] = 1000
         save_data()
 
     if call.data == "daily_bonus":
@@ -255,7 +258,7 @@ def callback_handler(call):
             bot.edit_message_text(text, call.message.chat.id, call.message.message_id, reply_markup=markup, parse_mode="Markdown")
             
     elif call.data == "vip_buy_yes":
-        user_balance = user_points.get(user_id, 1487)
+        user_balance = user_points.get(user_id, 1000)
         if user_balance >= 1000:
             user_points[user_id] -= 1000
             vip_users[user_id] = True
