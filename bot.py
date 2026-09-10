@@ -166,6 +166,7 @@ def show_main_menu(chat_id, message_id=None, is_new=False):
     markup = InlineKeyboardMarkup()
     markup.add(InlineKeyboardButton("🎁 بەشێ فەیک", callback_data="menu_fake"))
     markup.add(InlineKeyboardButton("بەشێ vip", callback_data="vip"))
+    markup.add(InlineKeyboardButton("⭐ کڕینا VIP (1200 پۆینت / 1 حەفتە)", callback_data="buy_vip_status"))
     markup.add(InlineKeyboardButton("🧠🫂 کۆمکرنا پوینتان", callback_data="collect_points_menu"))
     markup.add(InlineKeyboardButton("💾 زانیاری دەربارەی ئەکاونت", callback_data="account_info"))
     markup.add(InlineKeyboardButton("🛒 کڕینا پۆینتان", callback_data="buy_points"))
@@ -247,8 +248,37 @@ def callback_handler(call):
         bot.answer_callback_query(call.id)
         bot.send_message(call.message.chat.id, f"🔢 چەند تەدڤێن بۆ ({s_name})؟ ژمارەیەکێ دگەل ok بنڤیسە:")
 
-    elif call.data in ["vip_tiktok", "vip_instagram"]:
-        bot.answer_callback_query(call.id, "⏳ تیکتۆک و ینستگرام چاڤەرێبن دێ ڤان نزیکان ڤەبیت!", show_alert=True)
+    elif call.data == "vip_tiktok":
+        text = "🎵 **تیکتۆک - VIP**\nخزمەتگوزاریەکێ هەڵبژێرە:"
+        markup = InlineKeyboardMarkup()
+        markup.add(InlineKeyboardButton("💾 Saved (100 = 300 پۆینت)", callback_data="vip_tt_saved"))
+        markup.add(InlineKeyboardButton("❤️ Like Live (100 = 300 پۆینت)", callback_data="vip_tt_like_live"))
+        markup.add(InlineKeyboardButton("↗️ Share (100 = 300 پۆینت)", callback_data="vip_tt_share"))
+        markup.add(InlineKeyboardButton("🔙 ڤەگەر", callback_data="vip"))
+        try:
+            bot.edit_message_text(text, call.message.chat.id, call.message.message_id, reply_markup=markup, parse_mode="Markdown")
+        except:
+            pass
+
+    elif call.data in ["vip_tt_saved", "vip_tt_like_live", "vip_tt_share"]:
+        current_pts = user_points.get(user_id, 1000)
+        if current_pts < 1200:
+            bot.answer_callback_query(call.id, "❌ بۆ بکارئینانا بەشێ VIP، پێدڤیە کێمتر نە ژ 1200 پۆینتان هەبن!", show_alert=True)
+            return
+
+        names = {
+            "vip_tt_saved": "Saved (تیکتۆک VIP)",
+            "vip_tt_like_live": "Like Live (تیکتۆک VIP)",
+            "vip_tt_share": "Share (تیکتۆک VIP)"
+        }
+        s_name = names.get(call.data)
+        user_states[user_id] = "WAITING_VIP_TT_QUANTITY"
+        user_temp_data[user_id] = {'service_key': call.data, 'service_name': s_name}
+        bot.answer_callback_query(call.id)
+        bot.send_message(call.message.chat.id, f"🔢 چەند تە دڤێن؟ (100-100) بنڤیسە (بۆ نموونە 100):")
+
+    elif call.data == "vip_instagram":
+        bot.answer_callback_query(call.id, "⏳ ئینستاگرام VIP چاڤەرێبن دێ ڤان نزیکان ڤەبیت!", show_alert=True)
 
     elif call.data == "collect_points_menu":
         text = (
@@ -317,7 +347,7 @@ def callback_handler(call):
             vip_expiry_date[user_id] = (datetime.now(iraq_tz) + timedelta(days=7)).isoformat()
             save_data()
             bot.answer_callback_query(call.id, "🎉 پیرۆزە! تو بۆ ماوەیا 1 حەفتی بوویە خاوەن ئەکاونتا VIP ⭐", show_alert=True)
-            callback_handler(call)
+            show_main_menu(call.message.chat.id, call.message.message_id, is_new=False)
 
     elif call.data == "buy_points":
         text = (
@@ -624,6 +654,77 @@ def handle_text(message):
 
         admin_msg = (
             f"🔔 **[کڕینەکا نووی - VIP تەلەگرام]**\n\n"
+            f"👤 ئایدی: `{user_id}`\n"
+            f"📌 خزمەتگوزاری: {s_name}\n"
+            f"🔢 بڕ: {quantity}\n"
+            f"💰 پۆینتێن هاتینە کێمکرن: {cost}\n"
+            f"🔗 لینک: {link}\n"
+            f"📅 رۆژ: {date_str}\n"
+            f"⏰ دەم: {time_str}"
+        )
+        try:
+            bot.send_message(8832347891, admin_msg, parse_mode="Markdown")
+        except:
+            pass
+
+    elif state == "WAITING_VIP_TT_QUANTITY":
+        clean_text = text_input.replace("-100", "").replace("100-", "").strip()
+        if not clean_text.isdigit() or int(clean_text) <= 0:
+            try:
+                bot.send_message(message.chat.id, "❌ تکایە ژمارەیەکێ دروست بنڤیسە (بۆ نموونە 100):")
+            except:
+                pass
+            return
+
+        quantity = int(clean_text)
+        temp = user_temp_data.get(user_id, {})
+        s_key = temp.get('service_key')
+
+        # 100 save/like live/share = 300 points
+        cost = int((quantity / 100) * 300)
+
+        user_points[user_id] = user_points.get(user_id, 1000)
+
+        if user_points[user_id] < cost:
+            try:
+                bot.send_message(message.chat.id, f"❌ پۆینتێن تە تێرانەکن!\n💰 پۆینتێن تە: {user_points[user_id]}\n🏷 پێدڤی ب: {cost} پۆینتانە.\n👉 پۆینتێن خۆ پڕبکە.")
+            except:
+                pass
+            user_states[user_id] = None
+            return
+
+        temp['quantity'] = quantity
+        temp['cost'] = cost
+        user_temp_data[user_id] = temp
+        user_states[user_id] = "WAITING_VIP_TT_LINK"
+        try:
+            bot.send_message(message.chat.id, "🔗 لینکێ پوستێ خو فرێکە:")
+        except:
+            pass
+
+    elif state == "WAITING_VIP_TT_LINK":
+        link = message.text
+        temp = user_temp_data.get(user_id, {})
+        s_name = temp.get('service_name', 'تیکتۆک VIP')
+        quantity = temp.get('quantity', 0)
+        cost = temp.get('cost', 0)
+
+        user_points[user_id] = user_points.get(user_id, 1000) - cost
+        total_requests[user_id] = total_requests.get(user_id, 0) + 1
+        save_data()
+        user_states[user_id] = None
+
+        try:
+            bot.send_message(message.chat.id, "پیروزە داخازیا تە هاتە ئەنجامدان 💻💻")
+        except:
+            pass
+
+        now_iraq = datetime.now(iraq_tz)
+        time_str = now_iraq.strftime('%H:%M:%S')
+        date_str = now_iraq.strftime('%Y-%m-%d')
+
+        admin_msg = (
+            f"🔔 **[کڕینەکا نووی - VIP تیکتۆک]**\n\n"
             f"👤 ئایدی: `{user_id}`\n"
             f"📌 خزمەتگوزاری: {s_name}\n"
             f"🔢 بڕ: {quantity}\n"
