@@ -21,7 +21,8 @@ def load_data():
     return {
         "points": {},
         "last_bonus": {},
-        "last_free": {},  # بۆ ڕاگرتنامەی 24 سەعەتا بەشێ فەیری
+        "last_free": {},
+        "used_codes": {},  # بۆ پشکنینا کۆدێن دیاری یێن هاتینە بکارئینان
         "invited": {},
         "vip": {}
     }
@@ -31,6 +32,7 @@ def save_data():
         "points": user_points,
         "last_bonus": last_bonus_date,
         "last_free": last_free_date,
+        "used_codes": used_codes_data,
         "invited": invited_counts,
         "vip": vip_users
     }
@@ -41,6 +43,7 @@ db = load_data()
 user_points = {int(k): v for k, v in db.get("points", {}).items()}
 last_bonus_date = {int(k): v for k, v in db.get("last_bonus", {}).items()}
 last_free_date = {int(k): v for k, v in db.get("last_free", {}).items()}
+used_codes_data = {int(k): v for k, v in db.get("used_codes", {}).items()} # user_id: [codes]
 invited_counts = {int(k): v for k, v in db.get("invited", {}).items()}
 vip_users = {int(k): v for k, v in db.get("vip", {}).items()}
 
@@ -155,7 +158,6 @@ def callback_handler(call):
         bot.edit_message_text(text, call.message.chat.id, call.message.message_id, reply_markup=markup, parse_mode="Markdown")
 
     elif call.data == "free_telegram_100":
-        # پشکنینا دەمی بۆ 24 سەعەتا
         current_time = datetime.now(iraq_tz)
         last_time_str = last_free_date.get(user_id)
         
@@ -189,6 +191,11 @@ def callback_handler(call):
 
     elif call.data == "fake_wait":
         bot.answer_callback_query(call.id, "⏳ ئەڤ بەشە ل داهاتوویێ دێ هێتە زێدەکرن، چاڤەرێ بن!", show_alert=True)
+
+    elif call.data == "code":
+        user_states[user_id] = "WAITING_GIFT_CODE"
+        bot.answer_callback_query(call.id)
+        bot.send_message(call.message.chat.id, "🎟 تکایە کۆدێ دیاریێ بنڤیسە:")
 
     elif call.data == "special_tursi":
         text = "🌟 **بەشێ تورسی تایبەت**\nبەشەک هەڵبژێرە:"
@@ -259,7 +266,25 @@ def handle_text(message):
 
     state = user_states.get(user_id)
 
-    if state == "WAITING_FREE_LINK":
+    if state == "WAITING_GIFT_CODE":
+        code = message.text.strip()
+        user_states[user_id] = None
+        
+        if user_id not in used_codes_data:
+            used_codes_data[user_id] = []
+            
+        if code == "turse2027":
+            if "turse2027" in used_codes_data[user_id]:
+                bot.send_message(message.chat.id, "❌ تە بەری نۆکە ئەڤ کۆدە بکارئینایە!")
+            else:
+                used_codes_data[user_id].append("turse2027")
+                user_points[user_id] = user_points.get(user_id, 1000) + 500
+                save_data()
+                bot.send_message(message.chat.id, f"🎉 پیرۆزە! 500 پۆینت بۆ کۆما پۆینتێن تە زێدەبوون.\n💰 کۆما نوو: {user_points[user_id]}")
+        else:
+            bot.send_message(message.chat.id, "❌ کۆدێ دیاریێ هەڵە یە!")
+
+    elif state == "WAITING_FREE_LINK":
         if user_id not in user_temp_data:
             user_temp_data[user_id] = {}
         user_temp_data[user_id]['link'] = message.text
@@ -276,7 +301,6 @@ def handle_text(message):
         num = text_val
         service = user_temp_data.get(user_id, {}).get('service', 'FREE')
         
-        # تۆمارکرنا دەمێ نۆکە بۆ تێپەڕاندنا 24 سەعەتی
         last_free_date[user_id] = datetime.now(iraq_tz).isoformat()
         save_data()
         
@@ -284,14 +308,18 @@ def handle_text(message):
 
         bot.send_message(message.chat.id, "✅ داخوازیا تە هاتە جێبەجێکردن")
 
+        # نامەیا نوتیفکەیشن بۆ ایدیێ تە (8832347891)
         admin_msg = (
-            f"🎁 **داخوازەکا نووی (بەشێ FREE - فەیک)**\n\n"
-            f"👤 ئایدی: `{user_id}`\n"
+            f"🔔 **[ئاگەهداریا نووی - بەشێ فەیری]**\n\n"
+            f"👤 ئایدیێ بەکارهێنەری: `{user_id}`\n"
             f"📌 خزمەتگوزاری: {service}\n"
             f"🔗 لینک: {link}\n"
             f"🔢 ژمارە (1-100): {num}"
         )
-        bot.send_message(ADMIN_ID, admin_msg, parse_mode="Markdown")
+        try:
+            bot.send_message(8832347891, admin_msg, parse_mode="Markdown")
+        except:
+            pass
 
     elif state == "WAITING_FAKE_SECTION_LINK":
         link = message.text
@@ -300,12 +328,17 @@ def handle_text(message):
 
         bot.send_message(message.chat.id, f"✅ داخوازیا تە بۆ ({service}) ب سەرکەفتیانە هاتە وەرگرتن!")
 
+        # نامەیا نوتیفکەیشن بۆ کڕین / داخوازیا فەیک بۆ ایدیێ تە
         admin_msg = (
-            f"🎁 **داخوازەکا نووی ({service})**\n\n"
-            f"👤 ئایدی: `{user_id}`\n"
+            f"🔔 **[داخوازەکا نووی / کڕین - فەیک]**\n\n"
+            f"👤 ئایدیێ بەکارهێنەری: `{user_id}`\n"
+            f"📌 خزمەتگوزاری: {service}\n"
             f"🔗 لینک: {link}"
         )
-        bot.send_message(ADMIN_ID, admin_msg, parse_mode="Markdown")
+        try:
+            bot.send_message(8832347891, admin_msg, parse_mode="Markdown")
+        except:
+            pass
 
     elif state == "WAITING_TURSI_LINK":
         link = message.text
@@ -314,12 +347,16 @@ def handle_text(message):
         
         bot.send_message(message.chat.id, f"✅ داخوازیا تە بۆ ({service}) ب سەرکەفتیانە هاتە وەرگرتن!")
         
+        # نامەیا نوتیفکەیشن بۆ تورسی تایبەت بۆ ایدیێ تە
         admin_msg = (
-            f"🌟 **داخوازەکا نووی (تورسی تایبەت)**\n\n"
-            f"👤 ئایدی: `{user_id}`\n"
+            f"🔔 **[داخوازەکا نووی / تورسی تایبەت]**\n\n"
+            f"👤 ئایدیێ بەکارهێنەری: `{user_id}`\n"
             f"📌 خزمەتگوزاری: {service}\n"
             f"🔗 لینک: {link}"
         )
-        bot.send_message(ADMIN_ID, admin_msg, parse_mode="Markdown")
+        try:
+            bot.send_message(8832347891, admin_msg, parse_mode="Markdown")
+        except:
+            pass
 
 bot.infinity_polling()
