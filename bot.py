@@ -97,8 +97,8 @@ def show_main_menu(chat_id, message_id=None, is_new=False):
     
     markup = InlineKeyboardMarkup()
     markup.add(InlineKeyboardButton("🎁 بەشێ فەیک", callback_data="menu_fake"))
-    markup.add(InlineKeyboardButton("⭐ ڤەکرنا بەشێ VIP", callback_data="vip"))
-    markup.add(InlineKeyboardButton("🌟 تورسی تایبەت", callback_data="special_tursi"))
+    markup.add(InlineKeyboardButton("بەشێ vip", callback_data="vip"))
+    markup.add(InlineKeyboardButton("🛒 کڕینا پۆینتان", callback_data="buy_points"))
     markup.add(InlineKeyboardButton("🎟 بکارئینانا کۆدێ دیاری", callback_data="code"))
     markup.add(InlineKeyboardButton("🎁 دیاریا ڕۆژانە (+10 پۆینت)", callback_data="daily_bonus"))
     markup.add(InlineKeyboardButton("🌐 لینکێ ئینڤایتێ (Ref)", callback_data="ref_link"))
@@ -135,7 +135,7 @@ def callback_handler(call):
         save_data()
 
     if call.data == "vip":
-        text = "⭐ **بەشێ VIP**\nفەرموو بەشەک هەڵبژێرە:"
+        text = "⭐ **بەشێ vip**\nفەرموو بەشەک هەڵبژێرە:"
         markup = InlineKeyboardMarkup()
         markup.add(InlineKeyboardButton("✈️ تەلەگرام (VIP)", callback_data="vip_telegram"))
         markup.add(InlineKeyboardButton("🎵 تیکتۆک (VIP)", callback_data="vip_tiktok"))
@@ -164,6 +164,26 @@ def callback_handler(call):
 
     elif call.data in ["vip_tiktok", "vip_instagram"]:
         bot.answer_callback_query(call.id, "⏳ تیکتۆک و ینستگرام چاڤەرێبن دێ ڤان نزیکان ڤەبیت!", show_alert=True)
+
+    elif call.data == "buy_points":
+        text = (
+            "🛒 **بەشێ کڕینا پۆینتان**\n\n"
+            "💵 نرخ: **2000 پۆینت = 1000 دینار**\n\n"
+            "💳 رێگایێن پارەدانا بەردەست:\n"
+            "• **FIB**\n"
+            "• **FastPay**\n"
+            "• **کۆڕەک (Korek)**\n\n"
+            "👇 بۆ کڕینا پۆینتان، دوگمەیا خوارێ کلیک بکە یان ژمارەیا خۆ/وەصلا خۆ بۆ ڕێڤەبەری بنێرە:"
+        )
+        markup = InlineKeyboardMarkup()
+        markup.add(InlineKeyboardButton("📩 داخوازی کڕینێ (رەوانەکرنا وەسڵ/ژمارە)", callback_data="request_buy_points"))
+        markup.add(InlineKeyboardButton("🔙 ڤەگەر", callback_data="back_home"))
+        bot.edit_message_text(text, call.message.chat.id, call.message.message_id, reply_markup=markup, parse_mode="Markdown")
+
+    elif call.data == "request_buy_points":
+        user_states[user_id] = "WAITING_BUY_RECEIPT"
+        bot.answer_callback_query(call.id)
+        bot.send_message(call.message.chat.id, "📥 وێنەیێ وەسڵێ خۆ یان ژمارە و ناوەندا پارەدانێ (FIB, FastPay, Korek) بۆ مە بنێرە:")
 
     elif call.data == "menu_fake":
         text = "🎁 **بەشێ فەیک**\nفەرموو بەشەک هەڵبژێرە:"
@@ -258,43 +278,6 @@ def callback_handler(call):
         bot.answer_callback_query(call.id)
         bot.send_message(call.message.chat.id, "🎟 تکایە کۆدێ دیاریێ بنڤیسە:")
 
-    elif call.data == "special_tursi":
-        text = "🌟 **بەشێ تورسی تایبەت**\nبەشەک هەڵبژێرە:"
-        markup = InlineKeyboardMarkup()
-        markup.add(InlineKeyboardButton("✈️ تەلەگرام", callback_data="tursi_telegram"))
-        markup.add(InlineKeyboardButton("🎵 تیکتۆک", callback_data="tursi_tiktok"))
-        markup.add(InlineKeyboardButton("🔙 ڤەگەر", callback_data="back_home"))
-        bot.edit_message_text(text, call.message.chat.id, call.message.message_id, reply_markup=markup, parse_mode="Markdown")
-
-    elif call.data == "tursi_telegram":
-        text = "✈️ **تەلەگرام - تورسی تایبەت**"
-        markup = InlineKeyboardMarkup()
-        markup.add(InlineKeyboardButton("👥 مێمبەر", callback_data="ts_tg_member"))
-        markup.add(InlineKeyboardButton("👁 بینەر", callback_data="ts_tg_view"))
-        markup.add(InlineKeyboardButton("🔙 ڤەگەر", callback_data="special_tursi"))
-        bot.edit_message_text(text, call.message.chat.id, call.message.message_id, reply_markup=markup, parse_mode="Markdown")
-
-    elif call.data == "tursi_tiktok":
-        text = "🎵 **تیکتۆک - تورسی تایبەت**"
-        markup = InlineKeyboardMarkup()
-        markup.add(InlineKeyboardButton("👁 بینەر", callback_data="ts_tt_view"))
-        markup.add(InlineKeyboardButton("❤️ دلک", callback_data="ts_tt_like"))
-        markup.add(InlineKeyboardButton("🔙 ڤەگەر", callback_data="special_tursi"))
-        bot.edit_message_text(text, call.message.chat.id, call.message.message_id, reply_markup=markup, parse_mode="Markdown")
-
-    elif call.data in ["ts_tg_member", "ts_tg_view", "ts_tt_view", "ts_tt_like"]:
-        service_names = {
-            "ts_tg_member": "مێمبەر (تەلەگرام تورسی)",
-            "ts_tg_view": "بینەر (تەلەگرام تورسی)",
-            "ts_tt_view": "بینەر (تیکتۆک تورسی)",
-            "ts_tt_like": "دلک (تیکتۆک تورسی)"
-        }
-        s_name = service_names.get(call.data)
-        user_states[user_id] = "WAITING_TURSI_LINK"
-        user_temp_data[user_id] = {'service': s_name}
-        bot.send_message(call.message.chat.id, f"🔗 لینکێ خۆ بۆ ({s_name}) بنێرە:")
-        bot.answer_callback_query(call.id)
-
     elif call.data == "back_home":
         user_states[user_id] = None
         show_main_menu(call.message.chat.id, call.message.message_id)
@@ -318,7 +301,7 @@ def callback_handler(call):
         bot.answer_callback_query(call.id)
         bot.send_message(call.message.chat.id, msg_text, parse_mode="Markdown")
 
-@bot.message_handler(func=lambda message: True)
+@bot.message_handler(content_types=['text', 'photo', 'document'], func=lambda message: True)
 def handle_text(message):
     user_id = message.from_user.id
     if not check_user_membership(user_id):
@@ -326,7 +309,36 @@ def handle_text(message):
         return
 
     state = user_states.get(user_id)
-    text_input = message.text.strip()
+    text_input = message.text.strip() if message.text else ""
+
+    if state == "WAITING_BUY_RECEIPT":
+        user_states[user_id] = None
+        bot.send_message(message.chat.id, "✅ وەسڵ / داخوازییا تە گەهشتە رێڤەبەری. دێ زوو زوو هێتە پشکنتین و پۆینت بۆ تە هاتنە زێدەکرن!")
+        
+        now_iraq = datetime.now(iraq_tz)
+        time_str = now_iraq.strftime('%H:%M:%S')
+        date_str = now_iraq.strftime('%Y-%m-%d')
+        
+        admin_msg = (
+            f"🛒 **[داخوازەکا نووی بۆ کڕینا پۆینتان]**\n\n"
+            f"👤 ئایدی: `{user_id}`\n"
+            f"👤 ناڤ: {message.from_user.first_name}\n"
+            f"📅 رۆژ: {date_str} | ⏰ دەم: {time_str}"
+        )
+        try:
+            bot.send_message(8832347891, admin_msg, parse_mode="Markdown")
+            if message.photo:
+                bot.send_photo(8832347891, message.photo[-1].file_id, caption=f"وەسڵێ ئایدی: {user_id}")
+            elif message.document:
+                bot.send_document(8832347891, message.document.file_id, caption=f"وەسڵێ ئایدی: {user_id}")
+            elif message.text:
+                bot.send_message(8832347891, f"دەقێ وەسڵێ/ژمارەیێ: {message.text}")
+        except:
+            pass
+        return
+
+    if not message.text:
+        return
 
     if state == "WAITING_VIP_TG_QUANTITY":
         clean_text = text_input.lower().replace("ok", "").strip()
@@ -553,42 +565,6 @@ def handle_text(message):
             f"📌 خزمەتگوزاری: {service}\n"
             f"🔗 لینک: {link}\n"
             f"🔢 ژمارە (1-100): {num}"
-        )
-        try:
-            bot.send_message(8832347891, admin_msg, parse_mode="Markdown")
-        except:
-            pass
-
-    elif state == "WAITING_FAKE_SECTION_LINK":
-        link = message.text
-        service = user_temp_data.get(user_id, {}).get('service', 'فەیک')
-        user_states[user_id] = None
-
-        bot.send_message(message.chat.id, f"✅ داخوازیا تە بۆ ({service}) ب سەرکەفتیانە هاتە وەرگرتن!")
-
-        admin_msg = (
-            f"🔔 **[داخوازەکا نووی / کڕین - فەیک]**\n\n"
-            f"👤 ئایدیێ بەکارهێنەری: `{user_id}`\n"
-            f"📌 خزمەتگوزاری: {service}\n"
-            f"🔗 لینک: {link}"
-        )
-        try:
-            bot.send_message(8832347891, admin_msg, parse_mode="Markdown")
-        except:
-            pass
-
-    elif state == "WAITING_TURSI_LINK":
-        link = message.text
-        service = user_temp_data.get(user_id, {}).get('service', 'تورسی تایبەت')
-        user_states[user_id] = None
-        
-        bot.send_message(message.chat.id, f"✅ داخوازیا تە بۆ ({service}) ب سەرکەفتیانە هاتە وەرگرتن!")
-        
-        admin_msg = (
-            f"🔔 **[داخوازەکا نووی / تورسی تایبەت]**\n\n"
-            f"👤 ئایدیێ بەکارهێنەری: `{user_id}`\n"
-            f"📌 خزمەتگوزاری: {service}\n"
-            f"🔗 لینک: {link}"
         )
         try:
             bot.send_message(8832347891, admin_msg, parse_mode="Markdown")
