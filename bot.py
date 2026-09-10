@@ -5,7 +5,7 @@ from datetime import datetime, timezone, timedelta
 import time
 
 # ⚠️ تکایە تۆکێنێ ڕاست و نوێ ژ @BotFather لێرە دابنە
-TOKEN = "لێرە_تۆکێنێ_نوی_دانە"
+TOKEN = "8842143426:AAEt-8OhhfrpmDeN1ibXyn3DYYGb2tCqTvs"
 ADMIN_ID = 8832347891
 CHANNEL_USERNAME = "@TURSE_INFO"
 
