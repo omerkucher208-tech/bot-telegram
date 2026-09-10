@@ -25,7 +25,12 @@ def load_data():
         "last_free": {},
         "used_codes": {},
         "invited": {},
-        "vip": {}
+        "vip": {},
+        "bonus_points_earned": {},
+        "total_gifts_claimed": {},
+        "total_requests": {},
+        "sent_points_count": {},
+        "referrers": {}
     }
 
 def save_data():
@@ -35,7 +40,12 @@ def save_data():
         "last_free": last_free_date,
         "used_codes": used_codes_data,
         "invited": invited_counts,
-        "vip": vip_users
+        "vip": vip_users,
+        "bonus_points_earned": bonus_points_earned,
+        "total_gifts_claimed": total_gifts_claimed,
+        "total_requests": total_requests,
+        "sent_points_count": sent_points_count,
+        "referrers": referrers_data
     }
     with open(DATA_FILE, "w", encoding="utf-8") as f:
         json.dump(data, f, ensure_ascii=False, indent=4)
@@ -47,6 +57,11 @@ last_free_date = {int(k): v for k, v in db.get("last_free", {}).items()}
 used_codes_data = {int(k): v for k, v in db.get("used_codes", {}).items()}
 invited_counts = {int(k): v for k, v in db.get("invited", {}).items()}
 vip_users = {int(k): v for k, v in db.get("vip", {}).items()}
+bonus_points_earned = {int(k): v for k, v in db.get("bonus_points_earned", {}).items()}
+total_gifts_claimed = {int(k): v for k, v in db.get("total_gifts_claimed", {}).items()}
+total_requests = {int(k): v for k, v in db.get("total_requests", {}).items()}
+sent_points_count = {int(k): v for k, v in db.get("sent_points_count", {}).items()}
+referrers_data = {int(k): v for k, v in db.get("referrers", {}).items()}
 
 user_states = {}
 user_temp_data = {}
@@ -70,9 +85,10 @@ def send_welcome(message):
     if len(args) > 1 and args[1].isdigit():
         ref_id = int(args[1])
         if ref_id != user_id and ref_id in user_points:
-            # Check if this user was already referred
-            if user_id not in used_codes_data.get(ref_id, []): # using a simple tracking or just check invited list
-                pass # can add logic if needed
+            if user_id not in referrers_data:
+                referrers_data[user_id] = ref_id
+                invited_counts[ref_id] = invited_counts.get(ref_id, 0) + 1
+                save_data()
 
     if not check_user_membership(user_id):
         show_force_sub_message(message.chat.id)
@@ -109,6 +125,7 @@ def show_main_menu(chat_id, message_id=None, is_new=False):
     markup.add(InlineKeyboardButton("🎁 بەشێ فەیک", callback_data="menu_fake"))
     markup.add(InlineKeyboardButton("بەشێ vip", callback_data="vip"))
     markup.add(InlineKeyboardButton("🧠🫂 کۆمکرنا پوینتان", callback_data="collect_points_menu"))
+    markup.add(InlineKeyboardButton("💾 زانیاری دەربارەی ئەکاونت", callback_data="account_info"))
     markup.add(InlineKeyboardButton("🛒 کڕینا پۆینتان", callback_data="buy_points"))
     
     if is_new:
@@ -184,6 +201,58 @@ def callback_handler(call):
         markup.add(InlineKeyboardButton("🌐 لینکێ ئینڤایتێ (Ref)", callback_data="ref_link"))
         markup.add(InlineKeyboardButton("🔙 ڤەگەر", callback_data="back_home"))
         bot.edit_message_text(text, call.message.chat.id, call.message.message_id, reply_markup=markup, parse_mode="Markdown")
+
+    elif call.data == "account_info":
+        points = user_points.get(user_id, 1000)
+        invites_count = invited_counts.get(user_id, 0)
+        is_vip = vip_users.get(user_id, False)
+        vip_status = "VIP ⭐" if is_vip else "FREE 👤"
+        gifts_claimed = total_gifts_claimed.get(user_id, 0)
+        bonus_earned = bonus_points_earned.get(user_id, 0)
+        requests_count = total_requests.get(user_id, 0)
+        sent_points = sent_points_count.get(user_id, 0)
+
+        # Top 3 invite referrers
+        sorted_invited = sorted(invited_counts.items(), key=lambda x: x[1], reverse=True)
+        top_text = ""
+        for i in range(3):
+            if i < len(sorted_invited):
+                u_id, count = sorted_invited[i]
+                top_text += f"top {i+1} = `ID: {u_id}` ({count} کەس)\n"
+            else:
+                top_text += f"top {i+1} = چۆل\n"
+
+        text = (
+            f"💾 **زانیاری دەربارەی ئەکوانت:**\n\n"
+            f"• [❇️] پۆینتت : `{points}`\n"
+            f"• [🌀] ژمارەی ئەو کەسانەی کە داخل لینکی تۆ بونە : `{invites_count}`\n"
+            f"• [👤] you VIP - FREE؟ : `{vip_status}`\n\n"
+            f"• [🎁] ژمارەی ئەو دیارییانەی وەرتگرتوە : `{gifts_claimed}`\n"
+            f"• [❇️] ژمارەی ئەو پۆینتانەی لە دیاری ڕۆژانە وەرتگرتوە : `{bonus_earned}`\n"
+            f"• [📮] ژمارەی داواکارییەکانت لە بۆت : `{requests_count}`\n"
+            f"• [♻️] ژمارەی ئەو کەسانەی کە پۆینتت بۆی ناردوە : `{sent_points}`\n\n"
+            f"• **ئەو کەسانەی کە زۆرترین شێری لینکی خۆی کردووە:**\n"
+            f"{top_text}"
+        )
+
+        markup = InlineKeyboardMarkup()
+        if not is_vip:
+            markup.add(InlineKeyboardButton("⭐ بوون بە VIP (بڕی 1000 پۆینت)", callback_data="buy_vip_status"))
+        markup.add(InlineKeyboardButton("🔙 ڤەگەر", callback_data="back_home"))
+
+        bot.edit_message_text(text, call.message.chat.id, call.message.message_id, reply_markup=markup, parse_mode="Markdown")
+
+    elif call.data == "buy_vip_status":
+        points = user_points.get(user_id, 1000)
+        if points < 1000:
+            bot.answer_callback_query(call.id, "❌ پۆینتێن تە تێرانەکن! پۆینتێن پێدڤی بۆ بوون بە VIP: 1000 پۆینت.", show_alert=True)
+        else:
+            user_points[user_id] = points - 1000
+            vip_users[user_id] = True
+            save_data()
+            bot.answer_callback_query(call.id, "🎉 پیرۆزە! تو بوویە خاوەن ئەکاونتا VIP ⭐", show_alert=True)
+            # Refresh account info view
+            callback_handler(call)
 
     elif call.data == "buy_points":
         text = (
@@ -313,10 +382,14 @@ def callback_handler(call):
         else:
             last_bonus_date[user_id] = current_date
             user_points[user_id] = user_points.get(user_id, 1000) + 10
+            
+            # Update stats
+            bonus_points_earned[user_id] = bonus_points_earned.get(user_id, 0) + 10
+            total_gifts_claimed[user_id] = total_gifts_claimed.get(user_id, 0) + 1
             save_data()
+            
             bot.answer_callback_query(call.id, f"🎉 پیرۆزە! 10 پۆینت زێدەبوون. کۆما پۆینتا: {user_points[user_id]}", show_alert=True)
         
-        # Go back to collect points menu or home
         text = (
             "🧠🫂 **بەشێ کۆمکرنا پۆینتان**\n\n"
             "فەرموو ڕێگایەکێ هەڵبژێرە بۆ زێدەکرنا پۆینتێن خۆ:"
@@ -351,6 +424,9 @@ def handle_text(message):
 
     if state == "WAITING_BUY_RECEIPT":
         user_states[user_id] = None
+        total_requests[user_id] = total_requests.get(user_id, 0) + 1
+        save_data()
+        
         bot.send_message(
             message.chat.id, 
             f"✅ وەسڵ / داخوازییا تە گەهشتە رێڤەبەری.\n"
@@ -421,6 +497,7 @@ def handle_text(message):
         cost = temp.get('cost', 0)
 
         user_points[user_id] = user_points.get(user_id, 1000) - cost
+        total_requests[user_id] = total_requests.get(user_id, 0) + 1
         save_data()
         user_states[user_id] = None
 
@@ -487,6 +564,7 @@ def handle_text(message):
         cost = temp.get('cost', 0)
 
         user_points[user_id] = user_points.get(user_id, 1000) - cost
+        total_requests[user_id] = total_requests.get(user_id, 0) + 1
         save_data()
         user_states[user_id] = None
 
@@ -542,6 +620,7 @@ def handle_text(message):
         cost = temp.get('cost', 0)
 
         user_points[user_id] = user_points.get(user_id, 1000) - cost
+        total_requests[user_id] = total_requests.get(user_id, 0) + 1
         save_data()
         user_states[user_id] = None
 
@@ -573,6 +652,7 @@ def handle_text(message):
             else:
                 used_codes_data[user_id].append("turse2027")
                 user_points[user_id] = user_points.get(user_id, 1000) + 500
+                total_gifts_claimed[user_id] = total_gifts_claimed.get(user_id, 0) + 1
                 save_data()
                 bot.send_message(message.chat.id, f"🎉 پیرۆزە! 500 پۆینت بۆ کۆما پۆینتێن تە زێدەبوون.\n💰 کۆما نوو: {user_points[user_id]}")
         else:
@@ -596,6 +676,7 @@ def handle_text(message):
         service = user_temp_data.get(user_id, {}).get('service', 'FREE')
         
         last_free_date[user_id] = datetime.now(iraq_tz).isoformat()
+        total_requests[user_id] = total_requests.get(user_id, 0) + 1
         save_data()
         
         user_states[user_id] = None
