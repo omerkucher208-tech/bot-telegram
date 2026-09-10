@@ -5,7 +5,7 @@ from datetime import datetime, timezone, timedelta
 import time
 
 # ⚠️ تکایە تۆکێنێ ڕاست و نوێ ژ @BotFather لێرە دابنە
-TOKEN = "8842143426:AAEt-8OhhfrpmDeN1ibXyn3DYYGb2tCqTvs"
+TOKEN = "لێرە_تۆکێنێ_نوی_دانە"
 ADMIN_ID = 8832347891
 CHANNEL_USERNAME = "@TURSE_INFO"
 
@@ -45,9 +45,9 @@ def send_welcome(message):
             user_points[ref_id] = user_points.get(ref_id, 0) + 10
             invited_counts[ref_id] = invited_counts.get(ref_id, 0) + 1
 
-    # لێرەدا پۆینتێن بکاربەری نوێ دکەینە 0
+    # لێرەدا پۆینتێن بکاربەری نوێ دکەینە 1000
     if user_id not in user_points:
-        user_points[user_id] = 0
+        user_points[user_id] = 1000
         
     user_states[user_id] = None
     
@@ -68,7 +68,7 @@ def show_force_sub_message(chat_id):
 
 def show_main_menu(chat_id, message_id=None, is_new=False):
     user_id = chat_id
-    points = user_points.get(user_id, 0)
+    points = user_points.get(user_id, 1000)
     
     text = (
         "💎 - بەخێرهاتن بۆ بۆتا دەنگدانا کوردی\n"
@@ -99,7 +99,7 @@ def callback_handler(call):
         if check_user_membership(user_id):
             bot.answer_callback_query(call.id, "✅ سوپاس، تە جۆین کر! بۆت بۆ تە ڤەبوو.", show_alert=True)
             if user_id not in user_points:
-                user_points[user_id] = 0
+                user_points[user_id] = 1000
             show_main_menu(call.message.chat.id, call.message.message_id, is_new=False)
         else:
             bot.answer_callback_query(call.id, "❌ هێشتا تە جۆین نەکریە! تکایە سەرەتا جۆین کە.", show_alert=True)
@@ -110,7 +110,7 @@ def callback_handler(call):
         return
 
     if user_id not in user_points:
-        user_points[user_id] = 0
+        user_points[user_id] = 1000
 
     if call.data == "daily_bonus":
         current_date = datetime.now(iraq_tz).strftime('%Y-%m-%d')
@@ -141,7 +141,7 @@ def callback_handler(call):
             f"🔗 **لینکێ ئینڤایتێ (Invite) یێ تە:**\n"
             f"`{ref_url}`\n\n"
             f"👥 **چەند کەس ئیناینە؟** {invites_num} کەس\n"
-            f"💰 **پاداشت:** بۆ هەر کەسەکی 100 پۆینت!\n\n"
+            f"💰 **پاداشت:** بۆ هەر کەسەکی 10 پۆینت!\n\n"
             "*(تکایە لینکێ خۆ کۆپی بکە و بۆ هەڤالێن خۆ بنێرە)*"
         )
         bot.answer_callback_query(call.id)
@@ -215,7 +215,7 @@ def callback_handler(call):
             bot.edit_message_text(text, call.message.chat.id, call.message.message_id, reply_markup=markup, parse_mode="Markdown")
             
     elif call.data == "vip_buy_yes":
-        user_balance = user_points.get(user_id, 0)
+        user_balance = user_points.get(user_id, 1000)
         if user_balance >= 100:
             user_points[user_id] -= 100
             vip_users[user_id] = True
@@ -299,7 +299,7 @@ def handle_text_steps(message):
             return
             
         required_points = count * 5
-        user_balance = user_points.get(user_id, 0)
+        user_balance = user_points.get(user_id, 1000)
         
         if user_balance < required_points:
             bot.send_message(
@@ -344,7 +344,7 @@ def handle_text_steps(message):
             return
             
         required_points = count * 10
-        user_balance = user_points.get(user_id, 0)
+        user_balance = user_points.get(user_id, 1000)
         
         if user_balance < required_points:
             bot.send_message(
@@ -389,7 +389,7 @@ def handle_text_steps(message):
             return
             
         required_points = count * 2
-        user_balance = user_points.get(user_id, 0)
+        user_balance = user_points.get(user_id, 1000)
         
         if user_balance < required_points:
             bot.send_message(
@@ -434,7 +434,7 @@ def handle_text_steps(message):
             return
             
         required_points = count * 15
-        user_balance = user_points.get(user_id, 0)
+        user_balance = user_points.get(user_id, 1000)
         
         if user_balance < required_points:
             bot.send_message(
@@ -476,7 +476,7 @@ def handle_text_steps(message):
             return
             
         required_points = count * 20
-        user_balance = user_points.get(user_id, 0)
+        user_balance = user_points.get(user_id, 1000)
         
         if user_balance < required_points:
             bot.send_message(
