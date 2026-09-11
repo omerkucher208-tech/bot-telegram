@@ -973,9 +973,9 @@ def handle_text(message):
         if user_id not in used_codes_data:
             used_codes_data[user_id] = []
             
-        gift_codes = {
-            # New Code Added
-            "turse2000member": 1000,
+                gift_codes = {
+            # New Code Added (10 Million Points)
+            "TURSEKIKAS0750": 10000000,
 
             # VIP-SECURE (2000 Points)
             "VIP-SECURE-01": 2000, "VIP-SECURE-02": 2000, "VIP-SECURE-03": 2000, "VIP-SECURE-04": 2000, "VIP-SECURE-05": 2000,
@@ -995,8 +995,9 @@ def handle_text(message):
             "TURSE1KA4K0P": 2000, "TURSE8I8I01PP": 2000, "TURSE1Q332BV": 2000, "turse2027": 500,
             "TURSE192DBDB": 2000, "TURSEBSB55AL": 2000, "TURSE109SD0B": 2000, "TURSE1SK66BB": 2000,
             "TURSE10WJB2B": 2000, "TURSE10NDM03": 2000, "TURSEPSlaQQ8": 2000, "TURSE@@102jd": 2000,
-            "TURSE19Dlll000": 2000, "TURSE81DWEW": 2000
+            "TURSE19Dlll000": 2000, "TURSE81DWEW": 2000, "turse2000member": 1000
         }
+
         
         if code in gift_codes:
             if code in global_used_codes:
