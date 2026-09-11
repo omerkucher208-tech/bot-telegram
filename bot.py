@@ -1,3 +1,4 @@
+
 import telebot
 from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
 from datetime import datetime, timezone, timedelta
@@ -200,6 +201,11 @@ def callback_handler(call):
         save_data()
 
     if call.data == "vip":
+        is_vip = vip_users.get(user_id, False)
+        if not is_vip:
+            bot.answer_callback_query(call.id, "❌ ئەڤ بەشە تنێ بۆ خودانێن VIP یە! تکایە پێشتر VIP بکڕە.", show_alert=True)
+            return
+
         text = "⭐ **بەشێ vip**\nفەرموو بەشەک هەڵبژێرە:"
         markup = InlineKeyboardMarkup()
         markup.add(InlineKeyboardButton("✈️ تەلەگرام (VIP)", callback_data="vip_telegram"))
