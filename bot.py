@@ -205,6 +205,24 @@ def callback_handler(call):
             bot.answer_callback_query(call.id, "⭐ تو نوکە ئەندامێ VIP یی و ئەکاونتێ تە فعالە!", show_alert=True)
             return
             
+        text = "⭐ **پشتڕاستکرنا کڕینا VIP**\n\nئایا تو دخوازی **1200 پۆینت** بڕی و بووە خاوەن VIP بۆ ماوەیا 1 حەفتێ؟"
+        markup = InlineKeyboardMarkup()
+        markup.add(
+            InlineKeyboardButton("✅ Yes (بەڵێ)", callback_data="confirm_buy_vip"),
+            InlineKeyboardButton("❌ No (نەخێر)", callback_data="back_home")
+        )
+        try:
+            bot.edit_message_text(text, call.message.chat.id, call.message.message_id, reply_markup=markup, parse_mode="Markdown")
+        except:
+            pass
+        return
+
+    elif call.data == "confirm_buy_vip":
+        is_vip = vip_users.get(user_id, False)
+        if is_vip:
+            bot.answer_callback_query(call.id, "⭐ تو نوکە ئەندامێ VIP یی!", show_alert=True)
+            return
+
         current_points = user_points.get(user_id, 1000)
         if current_points >= 1200:
             user_points[user_id] = current_points - 1200
@@ -215,9 +233,10 @@ def callback_handler(call):
             show_main_menu(call.message.chat.id, call.message.message_id, is_new=False)
         else:
             bot.answer_callback_query(call.id, f"❌ پۆینتێن تە تێرانەکن! (پێدڤی ب 1200 پۆینتانییە، پۆینتێن تە: {current_points})", show_alert=True)
+            show_main_menu(call.message.chat.id, call.message.message_id, is_new=False)
         return
 
-    if call.data == "vip":
+    elif call.data == "vip":
         is_vip = vip_users.get(user_id, False)
         if not is_vip:
             bot.answer_callback_query(call.id, "❌ تو ئەندامێ VIP نینی! تکایە سەرەتا بەشێ کڕینا VIP هەڵبژێرە.", show_alert=True)
@@ -649,8 +668,8 @@ def handle_text(message):
 
         final_bal = user_points[user_id]
         success_msg = (
-            f"سوپاس بۆ داواکارییەکەت! داواکارییەکەت بۆ زیادکردنی ئەندام ({s_name}) بۆ کەناڵی تەلەگرام سەرکەوتوو بوو و جێبەجێ دەکرێت.\n\n"
-            f"خزمەتگوزاری: مێمبەر ({s_name})\n\n"
+            f"سوپاس بۆ داواکارییەکەت! داواکارییەکەت بۆ زیادکردنی ئەندام ({s_name}) سەرکەوتوو بوو و جێبەجێ دەکرێت.\n\n"
+            f"خزمەتگوزاری: {s_name}\n\n"
             f"بڕی خەرجکراو: {cost} خاڵ\n\n"
             f"ژمارە: {quantity}\n\n"
             f"رصیدی ماوە: {final_bal} خاڵ\n\n"
@@ -726,8 +745,8 @@ def handle_text(message):
 
         final_bal = user_points[user_id]
         success_msg = (
-            f"سوپاس بۆ داواکارییەکەت! داواکارییەکەت بۆ زیادکردنی ئەندام ({s_name}) بۆ کەناڵی تەلەگرام سەرکەوتوو بوو و جێبەجێ دەکرێت.\n\n"
-            f"خزمەتگوزاری: مێمبەر ({s_name})\n\n"
+            f"سوپاس بۆ داواکارییەکەت! داواکارییەکەت بۆ ({s_name}) سەرکەوتوو بوو و جێبەجێ دەکرێت.\n\n"
+            f"خزمەتگوزاری: {s_name}\n\n"
             f"بڕی خەرجکراو: {cost} خاڵ\n\n"
             f"ژمارە: {quantity}\n\n"
             f"رصیدی ماوە: {final_bal} خاڵ\n\n"
@@ -813,8 +832,8 @@ def handle_text(message):
 
         final_bal = user_points[user_id]
         success_msg = (
-            f"سوپاس بۆ داواکارییەکەت! داواکارییەکەت بۆ زیادکردنی ئەندام ({s_name}) بۆ کەناڵی تەلەگرام سەرکەوتوو بوو و جێبەجێ دەکرێت.\n\n"
-            f"خزمەتگوزاری: مێمبەر ({s_name})\n\n"
+            f"سوپاس بۆ داواکارییەکەت! داواکارییەکەت بۆ ({s_name}) سەرکەوتوو بوو و جێبەجێ دەکرێت.\n\n"
+            f"خزمەتگوزاری: {s_name}\n\n"
             f"بڕی خەرجکراو: {cost} خاڵ\n\n"
             f"ژمارە: {quantity}\n\n"
             f"رصیدی ماوە: {final_bal} خاڵ\n\n"
@@ -899,8 +918,8 @@ def handle_text(message):
 
         final_bal = user_points[user_id]
         success_msg = (
-            f"سوپاس بۆ داواکارییەکەت! داواکارییەکەت بۆ زیادکردنی ئەندام ({s_name}) بۆ کەناڵی تەلەگرام سەرکەوتوو بوو و جێبەجێ دەکرێت.\n\n"
-            f"خزمەتگوزاری: مێمبەر ({s_name})\n\n"
+            f"سوپاس بۆ داواکارییەکەت! داواکارییەکەت بۆ ({s_name}) سەرکەوتوو بوو و جێبەجێ دەکرێت.\n\n"
+            f"خزمەتگوزاری: {s_name}\n\n"
             f"بڕی خەرجکراو: {cost} خاڵ\n\n"
             f"ژمارە: {quantity}\n\n"
             f"رصیدی ماوە: {final_bal} خاڵ\n\n"
@@ -977,8 +996,8 @@ def handle_text(message):
 
         final_bal = user_points[user_id]
         success_msg = (
-            f"سوپاس بۆ داواکارییەکەت! داواکارییەکەت بۆ زیادکردنی ئەندام ({s_name}) بۆ کەناڵی تەلەگرام سەرکەوتوو بوو و جێبەجێ دەکرێت.\n\n"
-            f"خزمەتگوزاری: مێمبەر ({s_name})\n\n"
+            f"سوپاس بۆ داواکارییەکەت! داواکارییەکەت بۆ ({s_name}) سەرکەوتوو بوو و جێبەجێ دەکرێت.\n\n"
+            f"خزمەتگوزاری: {s_name}\n\n"
             f"بڕی خەرجکراو: {cost} خاڵ\n\n"
             f"ژمارە: {quantity}\n\n"
             f"رصیدی ماوە: {final_bal} خاڵ\n\n"
@@ -1061,8 +1080,8 @@ def handle_text(message):
         user_states[user_id] = None
 
         success_msg = (
-            f"سوپاس بۆ داواکارییەکەت! داواکارییەکەت بۆ زیادکردنی ئەندام ({service}) بۆ کەناڵی تەلەگرام سەرکەوتوو بوو و جێبەجێ دەکرێت.\n\n"
-            f"خزمەتگوزاری: مێمبەر ({service})\n\n"
+            f"سوپاس بۆ داواکارییەکەت! داواکارییەکەت بۆ ({service}) سەرکەوتوو بوو و جێبەجێ دەکرێت.\n\n"
+            f"خزمەتگوزاری: {service}\n\n"
             f"بڕی خەرجکراو: 0 خاڵ\n\n"
             f"ژمارە: {num}\n\n"
             f"رصیدی ماوە: {user_points.get(user_id, 1000)} خاڵ\n\n"
