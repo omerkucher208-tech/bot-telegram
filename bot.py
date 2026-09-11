@@ -6,7 +6,7 @@ import os
 import threading
 import time
 
-TOKEN = "8679513381:AAFIGFhKxVVavxoXOAVlE49b8DvBeY_M4LM"
+TOKEN = "8842143426:AAEt-8OhhfrpmDeN1ibXyn3DYYGb2tCqTvs"
 ADMIN_ID = 8832347891
 CHANNELS = ["@TURSE_INFO", "@TORSEII"]
 ADMIN_USERNAME = "@T_U_R_S_E"
@@ -30,14 +30,12 @@ def load_data():
         "last_free": {},
         "used_codes": {},
         "global_used_codes": [],
-        "invited": {},
         "vip": {},
         "vip_expiry": {},
         "bonus_points_earned": {},
         "total_gifts_claimed": {},
         "total_requests": {},
-        "sent_points_count": {},
-        "referrers": {}
+        "sent_points_count": {}
     }
 
 db = load_data()
@@ -49,14 +47,12 @@ def save_data_to_file():
         "last_free": last_free_date,
         "used_codes": used_codes_data,
         "global_used_codes": global_used_codes,
-        "invited": invited_counts,
         "vip": vip_users,
         "vip_expiry": vip_expiry_date,
         "bonus_points_earned": bonus_points_earned,
         "total_gifts_claimed": total_gifts_claimed,
         "total_requests": total_requests,
-        "sent_points_count": sent_points_count,
-        "referrers": referrers_data
+        "sent_points_count": sent_points_count
     }
     try:
         with open(DATA_FILE, "w", encoding="utf-8") as f:
@@ -69,14 +65,12 @@ last_bonus_date = {int(k): v for k, v in db.get("last_bonus", {}).items()}
 last_free_date = {int(k): v for k, v in db.get("last_free", {}).items()}
 used_codes_data = {int(k): v for k, v in db.get("used_codes", {}).items()}
 global_used_codes = db.get("global_used_codes", [])
-invited_counts = {int(k): v for k, v in db.get("invited", {}).items()}
 vip_users = {int(k): v for k, v in db.get("vip", {}).items()}
 vip_expiry_date = {int(k): v for k, v in db.get("vip_expiry", {}).items()}
 bonus_points_earned = {int(k): v for k, v in db.get("bonus_points_earned", {}).items()}
 total_gifts_claimed = {int(k): v for k, v in db.get("total_gifts_claimed", {}).items()}
 total_requests = {int(k): v for k, v in db.get("total_requests", {}).items()}
 sent_points_count = {int(k): v for k, v in db.get("sent_points_count", {}).items()}
-referrers_data = {int(k): v for k, v in db.get("referrers", {}).items()}
 
 user_states = {}
 user_temp_data = {}
@@ -136,20 +130,6 @@ def send_welcome(message):
     if not check_user_membership(user_id):
         show_force_sub_message(message.chat.id)
         return
-
-    args = message.text.split()
-    if len(args) > 1 and args[1].isdigit():
-        ref_id = int(args[1])
-        if ref_id != user_id and user_id not in referrers_data:
-            if ref_id in user_points or ref_id in invited_counts:
-                referrers_data[user_id] = ref_id
-                invited_counts[ref_id] = invited_counts.get(ref_id, 0) + 1
-                user_points[ref_id] = user_points.get(ref_id, 0) + 200
-                save_data_to_file()
-                try:
-                    bot.send_message(ref_id, f"🎉 پیرۆزە! کەسەکی ب ڕێکا لینکێ تە هاتە ناو بۆتی و **200 پۆینت** بۆ تە هاتە زێدەکرن.")
-                except:
-                    pass
 
     if user_id not in user_points:
         user_points[user_id] = 0
@@ -348,7 +328,6 @@ def callback_handler(call):
         markup = InlineKeyboardMarkup()
         markup.add(InlineKeyboardButton("🎁 دیاریا ڕۆژانە (+10 پۆینت)", callback_data="daily_bonus"))
         markup.add(InlineKeyboardButton("🎟 بکارئینانا کۆدێ دیاری", callback_data="code"))
-        markup.add(InlineKeyboardButton("🌐 لینکێ ئینڤایتێ (Ref) [هەر ئینڤایت = 200 پۆینت]", callback_data="ref_link"))
         markup.add(InlineKeyboardButton("🔙 ڤەگەر", callback_data="back_home"))
         try:
             bot.edit_message_text(text, call.message.chat.id, call.message.message_id, reply_markup=markup, parse_mode="Markdown")
@@ -357,7 +336,6 @@ def callback_handler(call):
 
     elif call.data == "account_info":
         points = user_points.get(user_id, 0)
-        invites_count = invited_counts.get(user_id, 0)
         is_vip = vip_users.get(user_id, False)
         vip_status = "VIP ⭐" if is_vip else "FREE 👤"
         gifts_claimed = total_gifts_claimed.get(user_id, 0)
@@ -365,26 +343,14 @@ def callback_handler(call):
         requests_count = total_requests.get(user_id, 0)
         sent_points = sent_points_count.get(user_id, 0)
 
-        sorted_invited = sorted(invited_counts.items(), key=lambda x: x[1], reverse=True)
-        top_text = ""
-        for i in range(3):
-            if i < len(sorted_invited):
-                u_id, count = sorted_invited[i]
-                top_text += f"top {i+1} = `ID: {u_id}` ({count} کەس)\n"
-            else:
-                top_text += f"top {i+1} = چۆل\n"
-
         text = (
             f"💾 **زانیاری دەربارەی ئەکاونت:**\n\n"
             f"• [❇️] پۆینتت : `{points}`\n"
-            f"• [🌀] ژمارەی ئەو کەسانەی کە داخل لینکی تۆ بونە : `{invites_count}`\n"
             f"• [👤] you VIP - FREE؟ : `{vip_status}`\n\n"
             f"• [🎁] ژمارەی ئەو دیارییانەی وەرتگرتوە : `{gifts_claimed}`\n"
             f"• [❇️] ژمارەی ئەو پۆینتانەی لە دیاری ڕۆژانە وەرتگرتوە : `{bonus_earned}`\n"
             f"• [📮] ژمارەی داواکارییەکانت لە بۆت : `{requests_count}`\n"
-            f"• [♻️] ژمارەی ئەو کەسانەی کە پۆینتت بۆی ناردوە : `{sent_points}`\n\n"
-            f"• **ئەو کەسانەی کە زۆرترین شێری لینکی خۆی کردووە:**\n"
-            f"{top_text}"
+            f"• [♻️] ژمارەی ئەو کەسانەی کە پۆینتت بۆی ناردوە : `{sent_points}`\n"
         )
 
         markup = InlineKeyboardMarkup()
@@ -437,15 +403,11 @@ def callback_handler(call):
             InlineKeyboardButton("چاڤەرێبن", callback_data="fake_wait")
         ]
         row3 = [
-            InlineKeyboardButton("🎁 FREE (100 مێمبەر)", callback_data="free_telegram_100")
-        ]
-        row4 = [
             InlineKeyboardButton("🔙 ڤەگەر", callback_data="back_home")
         ]
         markup.add(*row1)
         markup.add(*row2)
         markup.add(*row3)
-        markup.add(*row4)
         try:
             bot.edit_message_text(text, call.message.chat.id, call.message.message_id, reply_markup=markup, parse_mode="Markdown")
         except:
@@ -509,28 +471,6 @@ def callback_handler(call):
     elif call.data == "fake_wait":
         bot.answer_callback_query(call.id, "⏳ ئەڤ بەشە ل داهاتوویێ دێ هێتە زێدەکرن، چاڤەرێ بن!", show_alert=True)
 
-    elif call.data == "free_telegram_100":
-        current_time = datetime.now(iraq_tz)
-        last_time_str = last_free_date.get(user_id)
-        
-        if last_time_str:
-            last_time = datetime.fromisoformat(last_time_str)
-            diff = current_time - last_time
-            if diff < timedelta(hours=24):
-                remaining = timedelta(hours=24) - diff
-                hours = int(remaining.total_seconds() // 3600)
-                minutes = int((remaining.total_seconds() % 3600) // 60)
-                bot.answer_callback_query(call.id, f"⚠️ تو دشێ ڕوژانە جارەکێ ڤی بەشی بکاربینی!\nمایە: {hours} دەمژمێر و {minutes} خولەک.", show_alert=True)
-                return
-
-        user_states[user_id] = "WAITING_FREE_LINK"
-        user_temp_data[user_id] = {'service': "تەلەگرام 100 مێمبەر (FREE)"}
-        try:
-            bot.send_message(call.message.chat.id, "🔗 لینکێ کەناڵ یان گروپێ خۆ بنێرە:")
-        except:
-            pass
-        bot.answer_callback_query(call.id)
-
     elif call.data == "code":
         user_states[user_id] = "WAITING_GIFT_CODE"
         bot.answer_callback_query(call.id)
@@ -564,21 +504,9 @@ def callback_handler(call):
         markup = InlineKeyboardMarkup()
         markup.add(InlineKeyboardButton("🎁 دیاریا ڕۆژانە (+10 پۆینت)", callback_data="daily_bonus"))
         markup.add(InlineKeyboardButton("🎟 بکارئینانا کۆدێ دیاری", callback_data="code"))
-        markup.add(InlineKeyboardButton("🌐 لینکێ ئینڤایتێ (Ref) [هەر ئینڤایت = 200 پۆینت]", callback_data="ref_link"))
         markup.add(InlineKeyboardButton("🔙 ڤەگەر", callback_data="back_home"))
         try:
             bot.edit_message_text(text, call.message.chat.id, call.message.message_id, reply_markup=markup, parse_mode="Markdown")
-        except:
-            pass
-
-    elif call.data == "ref_link":
-        bot_info = bot.get_me()
-        ref_url = f"https://t.me/{bot_info.username}?start={user_id}"
-        invites_num = invited_counts.get(user_id, 0)
-        msg_text = f"🔗 **لینکێ ئینڤایتێ تە:**\n`{ref_url}`\n\n👥 کەسێن هاتینە بانگهێشتکرن: {invites_num}\n💡 (بۆ هر کەسەکێ تە ئینڤایت بکەی 200 پۆینت بۆتە دێ هاتنە زێدەکرن)"
-        bot.answer_callback_query(call.id)
-        try:
-            bot.send_message(call.message.chat.id, msg_text, parse_mode="Markdown")
         except:
             pass
 
@@ -1044,21 +972,25 @@ def handle_text(message):
         if user_id not in used_codes_data:
             used_codes_data[user_id] = []
             
-        # لیستا کۆدێن دیاریی (هەمی کۆدێن 150 و 2000 پوینتی یێن پاراستی)
         gift_codes = {
-            # 30 کۆدێن پاراستی (150 پۆینت)
+            # New Code Added
+            "turse2000member": 1000,
+
+            # VIP-SECURE (2000 Points)
+            "VIP-SECURE-01": 2000, "VIP-SECURE-02": 2000, "VIP-SECURE-03": 2000, "VIP-SECURE-04": 2000, "VIP-SECURE-05": 2000,
+            "VIP-SECURE-06": 2000, "VIP-SECURE-07": 2000, "VIP-SECURE-08": 2000, "VIP-SECURE-09": 2000, "VIP-SECURE-10": 2000,
+            "VIP-SECURE-11": 2000, "VIP-SECURE-12": 2000, "VIP-SECURE-13": 2000, "VIP-SECURE-14": 2000, "VIP-SECURE-15": 2000,
+            "VIP-SECURE-16": 2000, "VIP-SECURE-17": 2000, "VIP-SECURE-18": 2000, "VIP-SECURE-19": 2000, "VIP-SECURE-20": 2000,
+            
+            # TURSE-SAFE (150 Points)
             "TURSE-SAFE-71A": 150, "TURSE-SAFE-82B": 150, "TURSE-SAFE-93C": 150, "TURSE-SAFE-14D": 150, "TURSE-SAFE-25E": 150,
             "TURSE-SAFE-36F": 150, "TURSE-SAFE-47G": 150, "TURSE-SAFE-58H": 150, "TURSE-SAFE-69I": 150, "TURSE-SAFE-70J": 150,
             "TURSE-SAFE-81K": 150, "TURSE-SAFE-92L": 150, "TURSE-SAFE-13M": 150, "TURSE-SAFE-24N": 150, "TURSE-SAFE-35O": 150,
             "TURSE-SAFE-46P": 150, "TURSE-SAFE-57Q": 150, "TURSE-SAFE-68R": 150, "TURSE-SAFE-79S": 150, "TURSE-SAFE-80T": 150,
             "TURSE-SAFE-91U": 150, "TURSE-SAFE-02V": 150, "TURSE-SAFE-12W": 150, "TURSE-SAFE-23X": 150, "TURSE-SAFE-34Y": 150,
             "TURSE-SAFE-45Z": 150, "TURSE-SAFE-56K": 150, "TURSE-SAFE-67Z": 150, "TURSE-SAFE-78M": 150, "TURSE-SAFE-89X": 150,
-            # 20 کۆدێن پاراستی (2000 پۆینت)
-            "VIP-SECURE-01": 2000, "VIP-SECURE-02": 2000, "VIP-SECURE-03": 2000, "VIP-SECURE-04": 2000, "VIP-SECURE-05": 2000,
-            "VIP-SECURE-06": 2000, "VIP-SECURE-07": 2000, "VIP-SECURE-08": 2000, "VIP-SECURE-09": 2000, "VIP-SECURE-10": 2000,
-            "VIP-SECURE-11": 2000, "VIP-SECURE-12": 2000, "VIP-SECURE-13": 2000, "VIP-SECURE-14": 2000, "VIP-SECURE-15": 2000,
-            "VIP-SECURE-16": 2000, "VIP-SECURE-17": 2000, "VIP-SECURE-18": 2000, "VIP-SECURE-19": 2000, "VIP-SECURE-20": 2000,
-            # کۆدێن پێشووتریش
+            
+            # Other codes
             "TURSE1KA4K0P": 2000, "TURSE8I8I01PP": 2000, "TURSE1Q332BV": 2000, "turse2027": 500,
             "TURSE192DBDB": 2000, "TURSEBSB55AL": 2000, "TURSE109SD0B": 2000, "TURSE1SK66BB": 2000,
             "TURSE10WJB2B": 2000, "TURSE10NDM03": 2000, "TURSEPSlaQQ8": 2000, "TURSE@@102jd": 2000,
@@ -1092,60 +1024,5 @@ def handle_text(message):
                 bot.send_message(message.chat.id, "❌ کۆدێ دیاریێ هەڵە یە!")
             except:
                 pass
-
-    elif state == "WAITING_FREE_LINK":
-        if user_id not in user_temp_data:
-            user_temp_data[user_id] = {}
-        user_temp_data[user_id]['link'] = message.text
-        user_states[user_id] = "WAITING_FREE_NUMBER"
-        try:
-            bot.send_message(message.chat.id, "🔢 تکایە ژمارەیەکێ ژ (1 تا 100) بنڤیسە:")
-        except:
-            pass
-
-    elif state == "WAITING_FREE_NUMBER":
-        text_val = message.text.strip()
-        if not text_val.isdigit() or not (1 <= int(text_val) <= 100):
-            try:
-                bot.send_message(message.chat.id, "❌ تکایە تنێ ژمارەیەکێ د ناڤبەرا 1 بۆ 100 دا بنڤیسە:")
-            except:
-                pass
-            return
-
-        link = user_temp_data.get(user_id, {}).get('link', 'نەدیار')
-        num = text_val
-        service = user_temp_data.get(user_id, {}).get('service', 'FREE')
-        
-        last_free_date[user_id] = datetime.now(iraq_tz).isoformat()
-        total_requests[user_id] = total_requests.get(user_id, 0) + 1
-        save_data_to_file()
-        
-        user_states[user_id] = None
-
-        success_msg = (
-            f"سوپاس بۆ داواکارییەکەت! داواکارییەکەت بۆ ({service}) سەرکەوتوو بوو و جێبەجێ دەکرێت.\n\n"
-            f"خزمەتگوزاری: {service}\n\n"
-            f"بڕی خەرجکراو: 0 خاڵ\n\n"
-            f"ژمارە: {num}\n\n"
-            f"رصیدی ماوە: {user_points.get(user_id, 0)} خاڵ\n\n"
-            f"🔗 الرابط:\n"
-            f"{link}"
-        )
-        try:
-            bot.send_message(message.chat.id, success_msg)
-        except:
-            pass
-
-        admin_msg = (
-            f"🔔 **[ئاگەهداریا نووی - بەشێ فەیری]**\n\n"
-            f"👤 ئایدیێ بەکارهێنەری: `{user_id}`\n"
-            f"📌 خزمەتگوزاری: {service}\n"
-            f"🔗 لینک: {link}\n"
-            f"🔢 ژمارە (1-100): {num}"
-        )
-        try:
-            bot.send_message(8832347891, admin_msg, parse_mode="Markdown")
-        except:
-            pass
 
 bot.infinity_polling()
