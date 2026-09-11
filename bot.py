@@ -6,7 +6,7 @@ import os
 import threading
 import time
 
-TOKEN = "8842143426:AAEt-8OhhfrpmDeN1ibXyn3DYYGb2tCqTvs"
+TOKEN = "8679513381:AAFIGFhKxVVavxoXOAVlE49b8DvBeY_M4LM"
 ADMIN_ID = 8832347891
 CHANNELS = ["@TURSE_INFO", "@TORSEII"]
 ADMIN_USERNAME = "@T_U_R_S_E"
