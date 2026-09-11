@@ -1,3 +1,4 @@
+
 import telebot
 from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
 from datetime import datetime, timezone, timedelta
@@ -57,7 +58,7 @@ def save_data():
         json.dump(data, f, ensure_ascii=False, indent=4)
 
 db = load_data()
-user_points = {int(k): 0 for k in db.get("points", {})}  # پۆینتێن حەمیان کرە سفڕ
+user_points = {int(k): v for k, v in db.get("points", {}).items()}  # پۆینتێن کەڤن ههاتنە هێلان و نەهاتنە سفڕکرن
 last_bonus_date = {int(k): v for k, v in db.get("last_bonus", {}).items()}
 last_free_date = {int(k): v for k, v in db.get("last_free", {}).items()}
 used_codes_data = {int(k): v for k, v in db.get("used_codes", {}).items()}
@@ -133,11 +134,17 @@ def send_welcome(message):
     args = message.text.split()
     if len(args) > 1 and args[1].isdigit():
         ref_id = int(args[1])
-        if ref_id != user_id and ref_id in user_points:
-            if user_id not in referrers_data:
+        # پشکنین کو خۆی خۆی ئینڤایت نەکەت و بەری نوکە ب ڕێکا ڤی کەسی نەهاتبیتە ناو بۆتی
+        if ref_id != user_id and user_id not in referrers_data:
+            if ref_id in user_points or ref_id in invited_counts:
                 referrers_data[user_id] = ref_id
                 invited_counts[ref_id] = invited_counts.get(ref_id, 0) + 1
+                user_points[ref_id] = user_points.get(ref_id, 0) + 200  # 200 پۆینت بۆ کەسێ بانگهێشتکەر
                 save_data()
+                try:
+                    bot.send_message(ref_id, f"🎉 پیرۆزە! کەسەکی ب ڕێکا لینکێ تە هاتە ناو بۆتی و **200 پۆینت** بۆ تە هاتە زێدەکرن.")
+                except:
+                    pass
 
     if user_id not in user_points:
         user_points[user_id] = 0
@@ -336,7 +343,7 @@ def callback_handler(call):
         markup = InlineKeyboardMarkup()
         markup.add(InlineKeyboardButton("🎁 دیاریا ڕۆژانە (+10 پۆینت)", callback_data="daily_bonus"))
         markup.add(InlineKeyboardButton("🎟 بکارئینانا کۆدێ دیاری", callback_data="code"))
-        markup.add(InlineKeyboardButton("🌐 لینکێ ئینڤایتێ (Ref)", callback_data="ref_link"))
+        markup.add(InlineKeyboardButton("🌐 لینکێ ئینڤایتێ (Ref) [هەر ئینڤایت = 200 پۆینت]", callback_data="ref_link"))
         markup.add(InlineKeyboardButton("🔙 ڤەگەر", callback_data="back_home"))
         try:
             bot.edit_message_text(text, call.message.chat.id, call.message.message_id, reply_markup=markup, parse_mode="Markdown")
@@ -552,7 +559,7 @@ def callback_handler(call):
         markup = InlineKeyboardMarkup()
         markup.add(InlineKeyboardButton("🎁 دیاریا ڕۆژانە (+10 پۆینت)", callback_data="daily_bonus"))
         markup.add(InlineKeyboardButton("🎟 بکارئینانا کۆدێ دیاری", callback_data="code"))
-        markup.add(InlineKeyboardButton("🌐 لینکێ ئینڤایتێ (Ref)", callback_data="ref_link"))
+        markup.add(InlineKeyboardButton("🌐 لینکێ ئینڤایتێ (Ref) [هەر ئینڤایت = 200 پۆینت]", callback_data="ref_link"))
         markup.add(InlineKeyboardButton("🔙 ڤەگەر", callback_data="back_home"))
         try:
             bot.edit_message_text(text, call.message.chat.id, call.message.message_id, reply_markup=markup, parse_mode="Markdown")
@@ -563,7 +570,7 @@ def callback_handler(call):
         bot_info = bot.get_me()
         ref_url = f"https://t.me/{bot_info.username}?start={user_id}"
         invites_num = invited_counts.get(user_id, 0)
-        msg_text = f"🔗 **لینکێ ئینڤایتێ تە:**\n`{ref_url}`\n\n👥 کەسێن هاتینە بانگهێشتکرن: {invites_num}"
+        msg_text = f"🔗 **لینکێ ئینڤایتێ تە:**\n`{ref_url}`\n\n👥 کەسێن هاتینە بانگهێشتکرن: {invites_num}\n💡 (بۆ هر کەسەکێ تە ئینڤایت بکەی 200 پۆینت بۆتە دێ هاتنە زێدەکرن)"
         bot.answer_callback_query(call.id)
         try:
             bot.send_message(call.message.chat.id, msg_text, parse_mode="Markdown")
@@ -1040,7 +1047,6 @@ def handle_text(message):
         }
         
         if code in gift_codes:
-            # پشکنین کو ئایا ئەڤ کۆدە بەری نوکە ژلایێ چ کەسەکێ ڤە هاتییە بکارئینان یان نا
             if code in global_used_codes:
                 try:
                     bot.send_message(message.chat.id, "❌ ئەڤ کۆدە بەری نوکە هاتییە بکارئینان و ب سەرکەفتن هاتە داخستن! تنێ ١ کەس ماف هەبوو بکاربینیت.")
@@ -1052,7 +1058,6 @@ def handle_text(message):
                 except:
                     pass
             else:
-                # زێدەکرنا کۆدی بۆ لیستەیا گشتی یا بکارئینایان دا چ کەسێن دی نەشێن بکاربینن
                 global_used_codes.append(code)
                 used_codes_data[user_id].append(code)
                 added_points = gift_codes[code]
