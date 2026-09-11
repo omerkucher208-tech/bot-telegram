@@ -40,10 +40,8 @@ def load_data():
         "referrers": {}
     }
 
-# بارکرنا داتایان ژ فایلێ ل دەستپێکێ
 db = load_data()
 
-# فەنکشنا گشتی بۆ پاشەکەوتکرنا داتایان (دێ د هەر گۆڕانکارییەکێ دا کار کەت)
 def save_data_to_file():
     data = {
         "points": user_points,
@@ -66,7 +64,6 @@ def save_data_to_file():
     except Exception as e:
         print(f"Error saving data: {e}")
 
-# گوهۆرۆکێن سەرەکی کو داتایێن کەڤن ژ فایلێ تێڕا دکەن (ب ئاوایێ int بۆ ئایدیان)
 user_points = {int(k): v for k, v in db.get("points", {}).items()}
 last_bonus_date = {int(k): v for k, v in db.get("last_bonus", {}).items()}
 last_free_date = {int(k): v for k, v in db.get("last_free", {}).items()}
@@ -147,7 +144,7 @@ def send_welcome(message):
             if ref_id in user_points or ref_id in invited_counts:
                 referrers_data[user_id] = ref_id
                 invited_counts[ref_id] = invited_counts.get(ref_id, 0) + 1
-                user_points[ref_id] = user_points.get(ref_id, 0) + 200  # 200 پۆینت بۆ ئینڤایتی
+                user_points[ref_id] = user_points.get(ref_id, 0) + 200
                 save_data_to_file()
                 try:
                     bot.send_message(ref_id, f"🎉 پیرۆزە! کەسەکی ب ڕێکا لینکێ تە هاتە ناو بۆتی و **200 پۆینت** بۆ تە هاتە زێدەکرن.")
@@ -1047,21 +1044,25 @@ def handle_text(message):
         if user_id not in used_codes_data:
             used_codes_data[user_id] = []
             
+        # لیستا کۆدێن دیاریی (هەمی کۆدێن 150 و 2000 پوینتی یێن پاراستی)
         gift_codes = {
-            "TURSE1KA4K0P": 2000,
-            "TURSE8I8I01PP": 2000,
-            "TURSE1Q332BV": 2000,
-            "turse2027": 500,
-            "TURSE192DBDB": 2000,
-            "TURSEBSB55AL": 2000,
-            "TURSE109SD0B": 2000,
-            "TURSE1SK66BB": 2000,
-            "TURSE10WJB2B": 2000,
-            "TURSE10NDM03": 2000,
-            "TURSEPSlaQQ8": 2000,
-            "TURSE@@102jd": 2000,
-            "TURSE19Dlll000": 2000,
-            "TURSE81DWEW": 2000
+            # 30 کۆدێن پاراستی (150 پۆینت)
+            "TURSE-SAFE-71A": 150, "TURSE-SAFE-82B": 150, "TURSE-SAFE-93C": 150, "TURSE-SAFE-14D": 150, "TURSE-SAFE-25E": 150,
+            "TURSE-SAFE-36F": 150, "TURSE-SAFE-47G": 150, "TURSE-SAFE-58H": 150, "TURSE-SAFE-69I": 150, "TURSE-SAFE-70J": 150,
+            "TURSE-SAFE-81K": 150, "TURSE-SAFE-92L": 150, "TURSE-SAFE-13M": 150, "TURSE-SAFE-24N": 150, "TURSE-SAFE-35O": 150,
+            "TURSE-SAFE-46P": 150, "TURSE-SAFE-57Q": 150, "TURSE-SAFE-68R": 150, "TURSE-SAFE-79S": 150, "TURSE-SAFE-80T": 150,
+            "TURSE-SAFE-91U": 150, "TURSE-SAFE-02V": 150, "TURSE-SAFE-12W": 150, "TURSE-SAFE-23X": 150, "TURSE-SAFE-34Y": 150,
+            "TURSE-SAFE-45Z": 150, "TURSE-SAFE-56K": 150, "TURSE-SAFE-67Z": 150, "TURSE-SAFE-78M": 150, "TURSE-SAFE-89X": 150,
+            # 20 کۆدێن پاراستی (2000 پۆینت)
+            "VIP-SECURE-01": 2000, "VIP-SECURE-02": 2000, "VIP-SECURE-03": 2000, "VIP-SECURE-04": 2000, "VIP-SECURE-05": 2000,
+            "VIP-SECURE-06": 2000, "VIP-SECURE-07": 2000, "VIP-SECURE-08": 2000, "VIP-SECURE-09": 2000, "VIP-SECURE-10": 2000,
+            "VIP-SECURE-11": 2000, "VIP-SECURE-12": 2000, "VIP-SECURE-13": 2000, "VIP-SECURE-14": 2000, "VIP-SECURE-15": 2000,
+            "VIP-SECURE-16": 2000, "VIP-SECURE-17": 2000, "VIP-SECURE-18": 2000, "VIP-SECURE-19": 2000, "VIP-SECURE-20": 2000,
+            # کۆدێن پێشووتریش
+            "TURSE1KA4K0P": 2000, "TURSE8I8I01PP": 2000, "TURSE1Q332BV": 2000, "turse2027": 500,
+            "TURSE192DBDB": 2000, "TURSEBSB55AL": 2000, "TURSE109SD0B": 2000, "TURSE1SK66BB": 2000,
+            "TURSE10WJB2B": 2000, "TURSE10NDM03": 2000, "TURSEPSlaQQ8": 2000, "TURSE@@102jd": 2000,
+            "TURSE19Dlll000": 2000, "TURSE81DWEW": 2000
         }
         
         if code in gift_codes:
