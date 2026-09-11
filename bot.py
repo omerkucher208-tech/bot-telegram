@@ -42,17 +42,17 @@ db = load_data()
 
 def save_data_to_file():
     data = {
-        "points": user_points,
-        "last_bonus": last_bonus_date,
-        "last_free": last_free_date,
-        "used_codes": used_codes_data,
+        "points": {str(k): v for k, v in user_points.items()},
+        "last_bonus": {str(k): v for k, v in last_bonus_date.items()},
+        "last_free": {str(k): v for k, v in last_free_date.items()},
+        "used_codes": {str(k): v for k, v in used_codes_data.items()},
         "global_used_codes": global_used_codes,
-        "vip": vip_users,
-        "vip_expiry": vip_expiry_date,
-        "bonus_points_earned": bonus_points_earned,
-        "total_gifts_claimed": total_gifts_claimed,
-        "total_requests": total_requests,
-        "sent_points_count": sent_points_count
+        "vip": {str(k): v for k, v in vip_users.items()},
+        "vip_expiry": {str(k): v for k, v in vip_expiry_date.items()},
+        "bonus_points_earned": {str(k): v for k, v in bonus_points_earned.items()},
+        "total_gifts_claimed": {str(k): v for k, v in total_gifts_claimed.items()},
+        "total_requests": {str(k): v for k, v in total_requests.items()},
+        "sent_points_count": {str(k): v for k, v in sent_points_count.items()}
     }
     try:
         with open(DATA_FILE, "w", encoding="utf-8") as f:
@@ -60,6 +60,7 @@ def save_data_to_file():
     except Exception as e:
         print(f"Error saving data: {e}")
 
+# Load data safely converting keys back to integers
 user_points = {int(k): v for k, v in db.get("points", {}).items()}
 last_bonus_date = {int(k): v for k, v in db.get("last_bonus", {}).items()}
 last_free_date = {int(k): v for k, v in db.get("last_free", {}).items()}
