@@ -281,7 +281,30 @@ def callback_handler(call):
         bot.send_message(call.message.chat.id, f"🔢 چەند تە دڤێن؟ (100-100) بنڤیسە (بۆ نموونە 100):")
 
     elif call.data == "vip_instagram":
-        bot.answer_callback_query(call.id, "⏳ ئینستاگرام VIP چاڤەرێبن دێ ڤان نزیکان ڤەبیت!", show_alert=True)
+        text = "📸 **ئینستاگرام - VIP**\nفەرموو خزمەتگوزارییا خۆ هەڵبژێرە:"
+        markup = InlineKeyboardMarkup()
+        markup.add(InlineKeyboardButton("👁 بینەرێن ستوری (100 = 300 پۆینت)", callback_data="vip_ig_story_views"))
+        markup.add(InlineKeyboardButton("❤️ لایکێن رێلز (100 = 300 پۆینت)", callback_data="vip_ig_reel_likes"))
+        markup.add(InlineKeyboardButton("👁 بینەرێن رێلز (500 = 300 پۆینت)", callback_data="vip_ig_reel_views"))
+        markup.add(InlineKeyboardButton("🚀 اکسپلور (100 = 100 پۆینت)", callback_data="vip_ig_explore"))
+        markup.add(InlineKeyboardButton("🔙 ڤەگەر", callback_data="vip"))
+        try:
+            bot.edit_message_text(text, call.message.chat.id, call.message.message_id, reply_markup=markup, parse_mode="Markdown")
+        except:
+            pass
+
+    elif call.data in ["vip_ig_story_views", "vip_ig_reel_likes", "vip_ig_reel_views", "vip_ig_explore"]:
+        names = {
+            "vip_ig_story_views": "بینەرێن ستوری (ئینستاگرام VIP)",
+            "vip_ig_reel_likes": "لایکێن رێلز (ئینستاگرام VIP)",
+            "vip_ig_reel_views": "بینەرێن رێلز (ئینستاگرام VIP)",
+            "vip_ig_explore": "اکسپلور (ئینستاگرام VIP)"
+        }
+        s_name = names.get(call.data)
+        user_states[user_id] = "WAITING_VIP_IG_QUANTITY"
+        user_temp_data[user_id] = {'service_key': call.data, 'service_name': s_name}
+        bot.answer_callback_query(call.id)
+        bot.send_message(call.message.chat.id, f"🔢 چەند تەدڤێن بۆ ({s_name})؟ ژمارەیەکێ دگەل ok بنڤیسە:")
 
     elif call.data == "collect_points_menu":
         text = (
@@ -722,6 +745,93 @@ def handle_text(message):
 
         admin_msg = (
             f"🔔 **[کڕینەکا نووی - VIP تیکتۆک]**\n\n"
+            f"👤 ئایدی: `{user_id}`\n"
+            f"📌 خزمەتگوزاری: {s_name}\n"
+            f"🔢 بڕ: {quantity}\n"
+            f"💰 پۆینت: {cost}\n"
+            f"🔗 لینک: {link}\n"
+            f"📅 رۆژ: {date_str}\n"
+            f"⏰ دەم: {time_str}"
+        )
+        try:
+            bot.send_message(8832347891, admin_msg, parse_mode="Markdown")
+        except:
+            pass
+
+    elif state == "WAITING_VIP_IG_QUANTITY":
+        clean_text = text_input.lower().replace("ok", "").strip()
+        if not clean_text.isdigit() or int(clean_text) <= 0:
+            try:
+                bot.send_message(message.chat.id, "❌ تکایە ژمارەیەکا دروست دگەل ok بنڤیسە:")
+            except:
+                pass
+            return
+
+        quantity = int(clean_text)
+        temp = user_temp_data.get(user_id, {})
+        s_key = temp.get('service_key')
+
+        cost = 0
+        if s_key == "vip_ig_story_views":
+            cost = int((quantity / 100) * 300)
+        elif s_key == "vip_ig_reel_likes":
+            cost = int((quantity / 100) * 300)
+        elif s_key == "vip_ig_reel_views":
+            cost = int((quantity / 500) * 300)
+        elif s_key == "vip_ig_explore":
+            cost = int((quantity / 100) * 100)
+
+        temp['quantity'] = quantity
+        temp['cost'] = cost
+        user_temp_data[user_id] = temp
+        user_states[user_id] = "WAITING_VIP_IG_LINK"
+        try:
+            bot.send_message(message.chat.id, "🔗 لینکێ خۆ فرێکە:")
+        except:
+            pass
+
+    elif state == "WAITING_VIP_IG_LINK":
+        link = message.text
+        temp = user_temp_data.get(user_id, {})
+        s_name = temp.get('service_name', 'ئینستاگرام VIP')
+        quantity = temp.get('quantity', 0)
+        cost = temp.get('cost', 0)
+
+        current_points = user_points.get(user_id, 1000)
+        if current_points < cost:
+            try:
+                bot.send_message(message.chat.id, f"❌ پۆینتێن تە تێرانەکن!\n💰 پۆینتێن تە: {current_points}\n🏷 پێدڤی ب: {cost} پۆینتانە.")
+            except:
+                pass
+            user_states[user_id] = None
+            return
+
+        user_points[user_id] = current_points - cost
+        total_requests[user_id] = total_requests.get(user_id, 0) + 1
+        save_data()
+        user_states[user_id] = None
+
+        final_bal = user_points[user_id]
+        success_msg = (
+            f"سوپاس بۆ داواکارییەکەت! داواکارییەکەت بۆ زیادکردنی ئەندام ({s_name}) بۆ کەناڵی تەلەگرام سەرکەوتوو بوو و جێبەجێ دەکرێت.\n\n"
+            f"خزمەتگوزاری: مێمبەر ({s_name})\n\n"
+            f"بڕی خەرجکراو: {cost} خاڵ\n\n"
+            f"ژمارە: {quantity}\n\n"
+            f"رصیدی ماوە: {final_bal} خاڵ\n\n"
+            f"🔗 الرابط:\n"
+            f"{link}"
+        )
+        try:
+            bot.send_message(message.chat.id, success_msg)
+        except:
+            pass
+
+        now_iraq = datetime.now(iraq_tz)
+        time_str = now_iraq.strftime('%H:%M:%S')
+        date_str = now_iraq.strftime('%Y-%m-%d')
+
+        admin_msg = (
+            f"🔔 **[کڕینەکا نووی - VIP ئینستاگرام]**\n\n"
             f"👤 ئایدی: `{user_id}`\n"
             f"📌 خزمەتگوزاری: {s_name}\n"
             f"🔢 بڕ: {quantity}\n"
