@@ -156,7 +156,7 @@ def show_main_menu(chat_id, message_id=None, is_new=False):
     markup = InlineKeyboardMarkup()
     markup.add(InlineKeyboardButton("🎁 بەشێ فەیک", callback_data="menu_fake"))
     markup.add(InlineKeyboardButton("بەشێ vip", callback_data="vip"))
-    markup.add(InlineKeyboardButton("⭐ چالاککرنا VIP (1 حەفتە)", callback_data="buy_vip_status"))
+    markup.add(InlineKeyboardButton("⭐ کڕینا VIP (1200 پۆینت / 1 حەفتە)", callback_data="buy_vip_status"))
     markup.add(InlineKeyboardButton("🧠🫂 کۆمکرنا پوینتان", callback_data="collect_points_menu"))
     markup.add(InlineKeyboardButton("💾 زانیاری دەربارەی ئەکاونت", callback_data="account_info"))
     markup.add(InlineKeyboardButton("🛒 کڕینا پۆینتان", callback_data="buy_points"))
@@ -309,7 +309,7 @@ def callback_handler(call):
 
         markup = InlineKeyboardMarkup()
         if not is_vip:
-            markup.add(InlineKeyboardButton("⭐ چالاککرنا VIP (1 حەفتە)", callback_data="buy_vip_status"))
+            markup.add(InlineKeyboardButton("⭐ کڕینا VIP (1200 پۆینت / 1 حەفتە)", callback_data="buy_vip_status"))
         markup.add(InlineKeyboardButton("🔙 ڤەگەر", callback_data="back_home"))
 
         try:
@@ -318,10 +318,39 @@ def callback_handler(call):
             pass
 
     elif call.data == "buy_vip_status":
+        current_points = user_points.get(user_id, 1000)
+        if current_points < 1200:
+            bot.answer_callback_query(call.id, f"❌ پۆینتێن تە تێرانەکن!\nبۆ کڕینا VIP پێدڤیە کێمتر نە ژ 1200 پۆینت هەبن.\n💰 پۆینتێن تە: {current_points}", show_alert=True)
+            return
+
+        markup = InlineKeyboardMarkup(row_width=2)
+        markup.add(
+            InlineKeyboardButton("YES ✅", callback_data="confirm_vip_yes"),
+            InlineKeyboardButton("NO ❌", callback_data="confirm_vip_no")
+        )
+        text = "⭐ **پشتراستکرنا کڕینا VIP**\n\nئایا تۆ دخوازی **1200 پۆینتان** بدەی دا بۆ ماوەیا **1 حەفتی** ببیتە خاوەن ئەکاونتا VIP؟"
+        try:
+            bot.edit_message_text(text, call.message.chat.id, call.message.message_id, reply_markup=markup, parse_mode="Markdown")
+        except:
+            pass
+
+    elif call.data == "confirm_vip_yes":
+        current_points = user_points.get(user_id, 1000)
+        if current_points < 1200:
+            bot.answer_callback_query(call.id, "❌ پۆینتێن تە تێرانەکن!", show_alert=True)
+            show_main_menu(call.message.chat.id, call.message.message_id)
+            return
+
+        user_points[user_id] = current_points - 1200
         vip_users[user_id] = True
         vip_expiry_date[user_id] = (datetime.now(iraq_tz) + timedelta(days=7)).isoformat()
         save_data()
-        bot.answer_callback_query(call.id, "🎉 پیرۆزە! تو بۆ ماوەیا 1 حەفتی بوویە خاوەن ئەکاونتا VIP ⭐ بێ مەرجا پۆینتان", show_alert=True)
+
+        bot.answer_callback_query(call.id, "🎉 پیرۆزە! 1200 پۆینت هاتە بڕین و تو بۆ ماوەیا 1 حەفتی بوویە خاوەن VIP ⭐", show_alert=True)
+        show_main_menu(call.message.chat.id, call.message.message_id, is_new=False)
+
+    elif call.data == "confirm_vip_no":
+        bot.answer_callback_query(call.id, "❌ پرۆسە هاتە هەلوەشاندن.", show_alert=True)
         show_main_menu(call.message.chat.id, call.message.message_id, is_new=False)
 
     elif call.data == "buy_points":
