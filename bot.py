@@ -1,4 +1,3 @@
-
 import telebot
 from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
 from datetime import datetime, timezone, timedelta
@@ -19,15 +18,18 @@ def load_data():
     if os.path.exists(DATA_FILE):
         try:
             with open(DATA_FILE, "r", encoding="utf-8") as f:
-                return json.load(f)
-        except:
-            pass
+                content = f.read().strip()
+                if content:
+                    return json.loads(content)
+        except Exception as e:
+            print(f"Error loading data: {e}")
+            
     return {
         "points": {},
         "last_bonus": {},
         "last_free": {},
         "used_codes": {},
-        "global_used_codes": [],  # بۆ زانینا کو کۆد هاتییە بکارئینان یان نا
+        "global_used_codes": [],
         "invited": {},
         "vip": {},
         "vip_expiry": {},
@@ -38,7 +40,11 @@ def load_data():
         "referrers": {}
     }
 
-def save_data():
+# بارکرنا داتایان ژ فایلێ ل دەستپێکێ
+db = load_data()
+
+# فەنکشنا گشتی بۆ پاشەکەوتکرنا داتایان (دێ د هەر گۆڕانکارییەکێ دا کار کەت)
+def save_data_to_file():
     data = {
         "points": user_points,
         "last_bonus": last_bonus_date,
@@ -54,11 +60,14 @@ def save_data():
         "sent_points_count": sent_points_count,
         "referrers": referrers_data
     }
-    with open(DATA_FILE, "w", encoding="utf-8") as f:
-        json.dump(data, f, ensure_ascii=False, indent=4)
+    try:
+        with open(DATA_FILE, "w", encoding="utf-8") as f:
+            json.dump(data, f, ensure_ascii=False, indent=4)
+    except Exception as e:
+        print(f"Error saving data: {e}")
 
-db = load_data()
-user_points = {int(k): v for k, v in db.get("points", {}).items()}  # پۆینتێن کەڤن ههاتنە هێلان و نەهاتنە سفڕکرن
+# گوهۆرۆکێن سەرەکی کو داتایێن کەڤن ژ فایلێ تێڕا دکەن (ب ئاوایێ int بۆ ئایدیان)
+user_points = {int(k): v for k, v in db.get("points", {}).items()}
 last_bonus_date = {int(k): v for k, v in db.get("last_bonus", {}).items()}
 last_free_date = {int(k): v for k, v in db.get("last_free", {}).items()}
 used_codes_data = {int(k): v for k, v in db.get("used_codes", {}).items()}
@@ -112,7 +121,7 @@ def background_vip_checker():
                         if now >= exp_time:
                             vip_users[uid] = False
                             vip_expiry_date.pop(uid, None)
-                            save_data()
+                            save_data_to_file()
                             try:
                                 bot.send_message(uid, "⚠️ **تێبینییا VIP:**\nماوەیا VIP یا حەفتییا تە تەواو بوو.")
                             except:
@@ -134,13 +143,12 @@ def send_welcome(message):
     args = message.text.split()
     if len(args) > 1 and args[1].isdigit():
         ref_id = int(args[1])
-        # پشکنین کو خۆی خۆی ئینڤایت نەکەت و بەری نوکە ب ڕێکا ڤی کەسی نەهاتبیتە ناو بۆتی
         if ref_id != user_id and user_id not in referrers_data:
             if ref_id in user_points or ref_id in invited_counts:
                 referrers_data[user_id] = ref_id
                 invited_counts[ref_id] = invited_counts.get(ref_id, 0) + 1
-                user_points[ref_id] = user_points.get(ref_id, 0) + 200  # 200 پۆینت بۆ کەسێ بانگهێشتکەر
-                save_data()
+                user_points[ref_id] = user_points.get(ref_id, 0) + 200  # 200 پۆینت بۆ ئینڤایتی
+                save_data_to_file()
                 try:
                     bot.send_message(ref_id, f"🎉 پیرۆزە! کەسەکی ب ڕێکا لینکێ تە هاتە ناو بۆتی و **200 پۆینت** بۆ تە هاتە زێدەکرن.")
                 except:
@@ -148,7 +156,7 @@ def send_welcome(message):
 
     if user_id not in user_points:
         user_points[user_id] = 0
-        save_data()
+        save_data_to_file()
         
     user_states[user_id] = None
     show_main_menu(message.chat.id, message.message_id if hasattr(message, 'message_id') else None, is_new=True)
@@ -194,7 +202,7 @@ def callback_handler(call):
             bot.answer_callback_query(call.id, "✅ سوپاس، تە جۆینێ هەردوو کەناڵان کر!", show_alert=True)
             if user_id not in user_points:
                 user_points[user_id] = 0
-                save_data()
+                save_data_to_file()
             show_main_menu(call.message.chat.id, call.message.message_id, is_new=False)
         else:
             bot.answer_callback_query(call.id, "❌ هێشتا تە جۆینێ هەردوو کەناڵان نەکریە!", show_alert=True)
@@ -207,7 +215,7 @@ def callback_handler(call):
 
     if user_id not in user_points:
         user_points[user_id] = 0
-        save_data()
+        save_data_to_file()
 
     if call.data == "buy_vip_menu":
         is_vip = vip_users.get(user_id, False)
@@ -238,7 +246,7 @@ def callback_handler(call):
             user_points[user_id] = current_points - 1200
             vip_users[user_id] = True
             vip_expiry_date[user_id] = (datetime.now(iraq_tz) + timedelta(days=7)).isoformat()
-            save_data()
+            save_data_to_file()
             bot.answer_callback_query(call.id, "🎉 پیرۆزە! 1200 پۆینت هاتە بڕین و تو بۆ ماوەیا 1 حەفتی بوویە خاوەن VIP ⭐", show_alert=True)
             show_main_menu(call.message.chat.id, call.message.message_id, is_new=False)
         else:
@@ -548,7 +556,7 @@ def callback_handler(call):
             
             bonus_points_earned[user_id] = bonus_points_earned.get(user_id, 0) + 10
             total_gifts_claimed[user_id] = total_gifts_claimed.get(user_id, 0) + 1
-            save_data()
+            save_data_to_file()
             
             bot.answer_callback_query(call.id, f"🎉 پیرۆزە! 10 پۆینت زێدەبوون. کۆما پۆینتا: {user_points[user_id]}", show_alert=True)
         
@@ -590,7 +598,7 @@ def handle_text(message):
     if state == "WAITING_BUY_RECEIPT":
         user_states[user_id] = None
         total_requests[user_id] = total_requests.get(user_id, 0) + 1
-        save_data()
+        save_data_to_file()
         
         try:
             bot.send_message(
@@ -673,7 +681,7 @@ def handle_text(message):
 
         user_points[user_id] = current_points - cost
         total_requests[user_id] = total_requests.get(user_id, 0) + 1
-        save_data()
+        save_data_to_file()
         user_states[user_id] = None
 
         final_bal = user_points[user_id]
@@ -750,7 +758,7 @@ def handle_text(message):
 
         user_points[user_id] = current_points - cost
         total_requests[user_id] = total_requests.get(user_id, 0) + 1
-        save_data()
+        save_data_to_file()
         user_states[user_id] = None
 
         final_bal = user_points[user_id]
@@ -837,7 +845,7 @@ def handle_text(message):
 
         user_points[user_id] = current_points - cost
         total_requests[user_id] = total_requests.get(user_id, 0) + 1
-        save_data()
+        save_data_to_file()
         user_states[user_id] = None
 
         final_bal = user_points[user_id]
@@ -923,7 +931,7 @@ def handle_text(message):
 
         user_points[user_id] = user_points.get(user_id, 0) - cost
         total_requests[user_id] = total_requests.get(user_id, 0) + 1
-        save_data()
+        save_data_to_file()
         user_states[user_id] = None
 
         final_bal = user_points[user_id]
@@ -1001,7 +1009,7 @@ def handle_text(message):
 
         user_points[user_id] = user_points.get(user_id, 0) - cost
         total_requests[user_id] = total_requests.get(user_id, 0) + 1
-        save_data()
+        save_data_to_file()
         user_states[user_id] = None
 
         final_bal = user_points[user_id]
@@ -1063,7 +1071,7 @@ def handle_text(message):
                 added_points = gift_codes[code]
                 user_points[user_id] = user_points.get(user_id, 0) + added_points
                 total_gifts_claimed[user_id] = total_gifts_claimed.get(user_id, 0) + 1
-                save_data()
+                save_data_to_file()
                 try:
                     bot.send_message(message.chat.id, f"🎉 پیرۆزە! {added_points} پۆینت بۆ کۆما پۆینتێن تە زێدەبوون.\n💰 کۆما نوو: {user_points[user_id]}")
                 except:
@@ -1099,7 +1107,7 @@ def handle_text(message):
         
         last_free_date[user_id] = datetime.now(iraq_tz).isoformat()
         total_requests[user_id] = total_requests.get(user_id, 0) + 1
-        save_data()
+        save_data_to_file()
         
         user_states[user_id] = None
 
