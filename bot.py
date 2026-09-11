@@ -26,6 +26,7 @@ def load_data():
         "last_bonus": {},
         "last_free": {},
         "used_codes": {},
+        "global_used_codes": [],  # بۆ زانینا کو کۆد هاتییە بکارئینان یان نا
         "invited": {},
         "vip": {},
         "vip_expiry": {},
@@ -42,6 +43,7 @@ def save_data():
         "last_bonus": last_bonus_date,
         "last_free": last_free_date,
         "used_codes": used_codes_data,
+        "global_used_codes": global_used_codes,
         "invited": invited_counts,
         "vip": vip_users,
         "vip_expiry": vip_expiry_date,
@@ -55,10 +57,11 @@ def save_data():
         json.dump(data, f, ensure_ascii=False, indent=4)
 
 db = load_data()
-user_points = {int(k): v for k, v in db.get("points", {}).items()}
+user_points = {int(k): 0 for k in db.get("points", {})}  # پۆینتێن حەمیان کرە سفڕ
 last_bonus_date = {int(k): v for k, v in db.get("last_bonus", {}).items()}
 last_free_date = {int(k): v for k, v in db.get("last_free", {}).items()}
 used_codes_data = {int(k): v for k, v in db.get("used_codes", {}).items()}
+global_used_codes = db.get("global_used_codes", [])
 invited_counts = {int(k): v for k, v in db.get("invited", {}).items()}
 vip_users = {int(k): v for k, v in db.get("vip", {}).items()}
 vip_expiry_date = {int(k): v for k, v in db.get("vip_expiry", {}).items()}
@@ -137,7 +140,7 @@ def send_welcome(message):
                 save_data()
 
     if user_id not in user_points:
-        user_points[user_id] = 1000
+        user_points[user_id] = 0
         save_data()
         
     user_states[user_id] = None
@@ -145,7 +148,7 @@ def send_welcome(message):
 
 def show_main_menu(chat_id, message_id=None, is_new=False):
     user_id = chat_id
-    points = user_points.get(user_id, 1000)
+    points = user_points.get(user_id, 0)
     
     text = (
         "💎 - بەخێرهاتن بۆ بۆتا دەنگدانا کوردی\n"
@@ -183,7 +186,7 @@ def callback_handler(call):
         if check_user_membership(user_id):
             bot.answer_callback_query(call.id, "✅ سوپاس، تە جۆینێ هەردوو کەناڵان کر!", show_alert=True)
             if user_id not in user_points:
-                user_points[user_id] = 1000
+                user_points[user_id] = 0
                 save_data()
             show_main_menu(call.message.chat.id, call.message.message_id, is_new=False)
         else:
@@ -196,7 +199,7 @@ def callback_handler(call):
         return
 
     if user_id not in user_points:
-        user_points[user_id] = 1000
+        user_points[user_id] = 0
         save_data()
 
     if call.data == "buy_vip_menu":
@@ -223,7 +226,7 @@ def callback_handler(call):
             bot.answer_callback_query(call.id, "⭐ تو نوکە ئەندامێ VIP یی!", show_alert=True)
             return
 
-        current_points = user_points.get(user_id, 1000)
+        current_points = user_points.get(user_id, 0)
         if current_points >= 1200:
             user_points[user_id] = current_points - 1200
             vip_users[user_id] = True
@@ -341,7 +344,7 @@ def callback_handler(call):
             pass
 
     elif call.data == "account_info":
-        points = user_points.get(user_id, 1000)
+        points = user_points.get(user_id, 0)
         invites_count = invited_counts.get(user_id, 0)
         is_vip = vip_users.get(user_id, False)
         vip_status = "VIP ⭐" if is_vip else "FREE 👤"
@@ -534,7 +537,7 @@ def callback_handler(call):
             bot.answer_callback_query(call.id, "⚠️ تە دیاریا ئەڤرۆ وەرگرتییە!", show_alert=True)
         else:
             last_bonus_date[user_id] = current_date
-            user_points[user_id] = user_points.get(user_id, 1000) + 10
+            user_points[user_id] = user_points.get(user_id, 0) + 10
             
             bonus_points_earned[user_id] = bonus_points_earned.get(user_id, 0) + 10
             total_gifts_claimed[user_id] = total_gifts_claimed.get(user_id, 0) + 1
@@ -652,7 +655,7 @@ def handle_text(message):
         quantity = temp.get('quantity', 0)
         cost = temp.get('cost', 0)
 
-        current_points = user_points.get(user_id, 1000)
+        current_points = user_points.get(user_id, 0)
         if current_points < cost:
             try:
                 bot.send_message(message.chat.id, f"❌ پۆینتێن تە تێرانەکن!\n💰 پۆینتێن تە: {current_points}\n🏷 پێدڤی ب: {cost} پۆینتانە.")
@@ -729,7 +732,7 @@ def handle_text(message):
         quantity = temp.get('quantity', 0)
         cost = temp.get('cost', 0)
 
-        current_points = user_points.get(user_id, 1000)
+        current_points = user_points.get(user_id, 0)
         if current_points < cost:
             try:
                 bot.send_message(message.chat.id, f"❌ پۆینتێن تە تێرانەکن!\n💰 پۆینتێن تە: {current_points}\n🏷 پێدڤی ب: {cost} پۆینتانە.")
@@ -816,7 +819,7 @@ def handle_text(message):
         quantity = temp.get('quantity', 0)
         cost = temp.get('cost', 0)
 
-        current_points = user_points.get(user_id, 1000)
+        current_points = user_points.get(user_id, 0)
         if current_points < cost:
             try:
                 bot.send_message(message.chat.id, f"❌ پۆینتێن تە تێرانەکن!\n💰 پۆینتێن تە: {current_points}\n🏷 پێدڤی ب: {cost} پۆینتانە.")
@@ -885,7 +888,7 @@ def handle_text(message):
         elif s_key == "tg_view":
             cost = int((quantity / 100) * 50)
 
-        user_points[user_id] = user_points.get(user_id, 1000)
+        user_points[user_id] = user_points.get(user_id, 0)
 
         if user_points[user_id] < cost:
             try:
@@ -911,7 +914,7 @@ def handle_text(message):
         quantity = temp.get('quantity', 0)
         cost = temp.get('cost', 0)
 
-        user_points[user_id] = user_points.get(user_id, 1000) - cost
+        user_points[user_id] = user_points.get(user_id, 0) - cost
         total_requests[user_id] = total_requests.get(user_id, 0) + 1
         save_data()
         user_states[user_id] = None
@@ -963,7 +966,7 @@ def handle_text(message):
         elif s_key == "ig_view":
             cost = int((quantity / 100) * 100)
 
-        user_points[user_id] = user_points.get(user_id, 1000)
+        user_points[user_id] = user_points.get(user_id, 0)
 
         if user_points[user_id] < cost:
             try:
@@ -989,7 +992,7 @@ def handle_text(message):
         quantity = temp.get('quantity', 0)
         cost = temp.get('cost', 0)
 
-        user_points[user_id] = user_points.get(user_id, 1000) - cost
+        user_points[user_id] = user_points.get(user_id, 0) - cost
         total_requests[user_id] = total_requests.get(user_id, 0) + 1
         save_data()
         user_states[user_id] = None
@@ -1029,19 +1032,35 @@ def handle_text(message):
         if user_id not in used_codes_data:
             used_codes_data[user_id] = []
             
-        if code == "turse2027":
-            if "turse2027" in used_codes_data[user_id]:
+        gift_codes = {
+            "TURSE1KA4K0P": 2000,
+            "TURSE8I8I01PP": 2000,
+            "TURSE1Q332BV": 2000,
+            "turse2027": 500
+        }
+        
+        if code in gift_codes:
+            # پشکنین کو ئایا ئەڤ کۆدە بەری نوکە ژلایێ چ کەسەکێ ڤە هاتییە بکارئینان یان نا
+            if code in global_used_codes:
+                try:
+                    bot.send_message(message.chat.id, "❌ ئەڤ کۆدە بەری نوکە هاتییە بکارئینان و ب سەرکەفتن هاتە داخستن! تنێ ١ کەس ماف هەبوو بکاربینیت.")
+                except:
+                    pass
+            elif code in used_codes_data[user_id]:
                 try:
                     bot.send_message(message.chat.id, "❌ تە بەری نۆکە ئەڤ کۆدە بکارئینایە!")
                 except:
                     pass
             else:
-                used_codes_data[user_id].append("turse2027")
-                user_points[user_id] = user_points.get(user_id, 1000) + 500
+                # زێدەکرنا کۆدی بۆ لیستەیا گشتی یا بکارئینایان دا چ کەسێن دی نەشێن بکاربینن
+                global_used_codes.append(code)
+                used_codes_data[user_id].append(code)
+                added_points = gift_codes[code]
+                user_points[user_id] = user_points.get(user_id, 0) + added_points
                 total_gifts_claimed[user_id] = total_gifts_claimed.get(user_id, 0) + 1
                 save_data()
                 try:
-                    bot.send_message(message.chat.id, f"🎉 پیرۆزە! 500 پۆینت بۆ کۆما پۆینتێن تە زێدەبوون.\n💰 کۆما نوو: {user_points[user_id]}")
+                    bot.send_message(message.chat.id, f"🎉 پیرۆزە! {added_points} پۆینت بۆ کۆما پۆینتێن تە زێدەبوون.\n💰 کۆما نوو: {user_points[user_id]}")
                 except:
                     pass
         else:
@@ -1084,7 +1103,7 @@ def handle_text(message):
             f"خزمەتگوزاری: {service}\n\n"
             f"بڕی خەرجکراو: 0 خاڵ\n\n"
             f"ژمارە: {num}\n\n"
-            f"رصیدی ماوە: {user_points.get(user_id, 1000)} خاڵ\n\n"
+            f"رصیدی ماوە: {user_points.get(user_id, 0)} خاڵ\n\n"
             f"🔗 الرابط:\n"
             f"{link}"
         )
