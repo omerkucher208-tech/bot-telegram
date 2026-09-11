@@ -155,6 +155,7 @@ def show_main_menu(chat_id, message_id=None, is_new=False):
     
     markup = InlineKeyboardMarkup()
     markup.add(InlineKeyboardButton("🎁 بەشێ فەیک", callback_data="menu_fake"))
+    markup.add(InlineKeyboardButton("⭐ کڕینا بەشێ VIP (1200 پۆینت / 1 حەفتە)", callback_data="buy_vip_menu"))
     markup.add(InlineKeyboardButton("بەشێ vip", callback_data="vip"))
     markup.add(InlineKeyboardButton("🧠🫂 کۆمکرنا پوینتان", callback_data="collect_points_menu"))
     markup.add(InlineKeyboardButton("💾 زانیاری دەربارەی ئەکاونت", callback_data="account_info"))
@@ -198,19 +199,29 @@ def callback_handler(call):
         user_points[user_id] = 1000
         save_data()
 
+    if call.data == "buy_vip_menu":
+        is_vip = vip_users.get(user_id, False)
+        if is_vip:
+            bot.answer_callback_query(call.id, "⭐ تو نوکە ئەندامێ VIP یی و ئەکاونتێ تە فعالە!", show_alert=True)
+            return
+            
+        current_points = user_points.get(user_id, 1000)
+        if current_points >= 1200:
+            user_points[user_id] = current_points - 1200
+            vip_users[user_id] = True
+            vip_expiry_date[user_id] = (datetime.now(iraq_tz) + timedelta(days=7)).isoformat()
+            save_data()
+            bot.answer_callback_query(call.id, "🎉 پیرۆزە! 1200 پۆینت هاتە بڕین و تو بۆ ماوەیا 1 حەفتی بوویە خاوەن VIP ⭐", show_alert=True)
+            show_main_menu(call.message.chat.id, call.message.message_id, is_new=False)
+        else:
+            bot.answer_callback_query(call.id, f"❌ پۆینتێن تە تێرانەکن! (پێدڤی ب 1200 پۆینتانییە، پۆینتێن تە: {current_points})", show_alert=True)
+        return
+
     if call.data == "vip":
         is_vip = vip_users.get(user_id, False)
         if not is_vip:
-            current_points = user_points.get(user_id, 1000)
-            if current_points >= 1200:
-                user_points[user_id] = current_points - 1200
-                vip_users[user_id] = True
-                vip_expiry_date[user_id] = (datetime.now(iraq_tz) + timedelta(days=7)).isoformat()
-                save_data()
-                bot.answer_callback_query(call.id, "🎉 پیرۆزە! 1200 پۆینت هاتە بڕین و تو بۆ ماوەیا 1 حەفتی بوویە خاوەن VIP ⭐", show_alert=True)
-            else:
-                bot.answer_callback_query(call.id, "❌ پۆینتێن تە تێرانەکن بۆ کڕینا VIP (پێدڤی ب 1200 پۆینتانییە)!", show_alert=True)
-                return
+            bot.answer_callback_query(call.id, "❌ تو ئەندامێ VIP نینی! تکایە سەرەتا بەشێ کڕینا VIP هەڵبژێرە.", show_alert=True)
+            return
 
         text = "⭐ **بەشێ vip**\nفەرموو بەشەک هەڵبژێرە:"
         markup = InlineKeyboardMarkup()
@@ -615,12 +626,11 @@ def handle_text(message):
 
         final_bal = user_points[user_id]
         success_msg = (
-            f"💳 تم خصم: {cost} point\n"
-            f"📌 العدد: {quantity}\n"
-            f"🛠 الخدمة: {s_name}\n\n"
-            f"💰 رصيدك الحالي: {final_bal} point\n\n"
-            f"⌁︙أنت لست آحد أعضاء ال↫ VIP\n"
-            f"⌁︙سيتم استخدام سعة محدودة\n\n"
+            f"سوپاس بۆ داواکارییەکەت! داواکارییەکەت بۆ زیادکردنی ئەندام ({s_name}) بۆ کەناڵی تەلەگرام سەرکەوتوو بوو و جێبەجێ دەکرێت.\n\n"
+            f"خزمەتگوزاری: مێمبەر ({s_name})\n\n"
+            f"بڕی خەرجکراو: {cost} خاڵ\n\n"
+            f"ژمارە: {quantity}\n\n"
+            f"رصیدی ماوە: {final_bal} خاڵ\n\n"
             f"🔗 الرابط:\n"
             f"{link}"
         )
@@ -693,12 +703,11 @@ def handle_text(message):
 
         final_bal = user_points[user_id]
         success_msg = (
-            f"💳 تم خصم: {cost} point\n"
-            f"📌 العدد: {quantity}\n"
-            f"🛠 الخدمة: {s_name}\n\n"
-            f"💰 رصيدك الحالي: {final_bal} point\n\n"
-            f"⌁︙أنت لست آحد أعضاء ال↫ VIP\n"
-            f"⌁︙سيتم استخدام سعة محدودة\n\n"
+            f"سوپاس بۆ داواکارییەکەت! داواکارییەکەت بۆ زیادکردنی ئەندام ({s_name}) بۆ کەناڵی تەلەگرام سەرکەوتوو بوو و جێبەجێ دەکرێت.\n\n"
+            f"خزمەتگوزاری: مێمبەر ({s_name})\n\n"
+            f"بڕی خەرجکراو: {cost} خاڵ\n\n"
+            f"ژمارە: {quantity}\n\n"
+            f"رصیدی ماوە: {final_bal} خاڵ\n\n"
             f"🔗 الرابط:\n"
             f"{link}"
         )
@@ -780,12 +789,11 @@ def handle_text(message):
 
         final_bal = user_points[user_id]
         success_msg = (
-            f"💳 تم خصم: {cost} point\n"
-            f"📌 العدد: {quantity}\n"
-            f"🛠 الخدمة: {s_name}\n\n"
-            f"💰 رصيدك الحالي: {final_bal} point\n\n"
-            f"⌁︙أنت لست آحد أعضاء ال↫ VIP\n"
-            f"⌁︙سيتم استخدام سعة محدودة\n\n"
+            f"سوپاس بۆ داواکارییەکەت! داواکارییەکەت بۆ زیادکردنی ئەندام ({s_name}) بۆ کەناڵی تەلەگرام سەرکەوتوو بوو و جێبەجێ دەکرێت.\n\n"
+            f"خزمەتگوزاری: مێمبەر ({s_name})\n\n"
+            f"بڕی خەرجکراو: {cost} خاڵ\n\n"
+            f"ژمارە: {quantity}\n\n"
+            f"رصیدی ماوە: {final_bal} خاڵ\n\n"
             f"🔗 الرابط:\n"
             f"{link}"
         )
@@ -859,12 +867,11 @@ def handle_text(message):
 
         final_bal = user_points[user_id]
         success_msg = (
-            f"💳 تم خصم: {cost} point\n"
-            f"📌 العدد: {quantity}\n"
-            f"🛠 الخدمة: {s_name}\n\n"
-            f"💰 رصيدك الحالي: {final_bal} point\n\n"
-            f"⌁︙أنت لست آحد أعضاء ال↫ VIP\n"
-            f"⌁︙سيتم استخدام سعة محدودة\n\n"
+            f"سوپاس بۆ داواکارییەکەت! داواکارییەکەت بۆ زیادکردنی ئەندام ({s_name}) بۆ کەناڵی تەلەگرام سەرکەوتوو بوو و جێبەجێ دەکرێت.\n\n"
+            f"خزمەتگوزاری: مێمبەر ({s_name})\n\n"
+            f"بڕی خەرجکراو: {cost} خاڵ\n\n"
+            f"ژمارە: {quantity}\n\n"
+            f"رصیدی ماوە: {final_bal} خاڵ\n\n"
             f"🔗 الرابط:\n"
             f"{link}"
         )
@@ -944,12 +951,11 @@ def handle_text(message):
         user_states[user_id] = None
 
         success_msg = (
-            f"💳 تم خصم: 0 point\n"
-            f"📌 العدد: {num}\n"
-            f"🛠 الخدمة: {service}\n\n"
-            f"💰 رصيدك الحالي: {user_points.get(user_id, 1000)} point\n\n"
-            f"⌁︙أنت لست آحد أعضاء ال↫ VIP\n"
-            f"⌁︙سيتم استخدام سعة محدودة\n\n"
+            f"سوپاس بۆ داواکارییەکەت! داواکارییەکەت بۆ زیادکردنی ئەندام ({service}) بۆ کەناڵی تەلەگرام سەرکەوتوو بوو و جێبەجێ دەکرێت.\n\n"
+            f"خزمەتگوزاری: مێمبەر ({service})\n\n"
+            f"بڕی خەرجکراو: 0 خاڵ\n\n"
+            f"ژمارە: {num}\n\n"
+            f"رصیدی ماوە: {user_points.get(user_id, 1000)} خاڵ\n\n"
             f"🔗 الرابط:\n"
             f"{link}"
         )
