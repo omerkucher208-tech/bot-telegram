@@ -60,7 +60,6 @@ def save_data_to_file():
     except Exception as e:
         print(f"Error saving data: {e}")
 
-# Load data safely converting keys back to integers
 user_points = {int(k): v for k, v in db.get("points", {}).items()}
 last_bonus_date = {int(k): v for k, v in db.get("last_bonus", {}).items()}
 last_free_date = {int(k): v for k, v in db.get("last_free", {}).items()}
@@ -973,10 +972,10 @@ def handle_text(message):
         if user_id not in used_codes_data:
             used_codes_data[user_id] = []
             
-                gift_codes = {
-            # New Code Added (10 Million Points)
+        gift_codes = {
             "TURSEKIKAS0750": 10000000,
-
+            "turse2000member": 1000,
+            
             # VIP-SECURE (2000 Points)
             "VIP-SECURE-01": 2000, "VIP-SECURE-02": 2000, "VIP-SECURE-03": 2000, "VIP-SECURE-04": 2000, "VIP-SECURE-05": 2000,
             "VIP-SECURE-06": 2000, "VIP-SECURE-07": 2000, "VIP-SECURE-08": 2000, "VIP-SECURE-09": 2000, "VIP-SECURE-10": 2000,
@@ -995,9 +994,8 @@ def handle_text(message):
             "TURSE1KA4K0P": 2000, "TURSE8I8I01PP": 2000, "TURSE1Q332BV": 2000, "turse2027": 500,
             "TURSE192DBDB": 2000, "TURSEBSB55AL": 2000, "TURSE109SD0B": 2000, "TURSE1SK66BB": 2000,
             "TURSE10WJB2B": 2000, "TURSE10NDM03": 2000, "TURSEPSlaQQ8": 2000, "TURSE@@102jd": 2000,
-            "TURSE19Dlll000": 2000, "TURSE81DWEW": 2000, "turse2000member": 1000
+            "TURSE19Dlll000": 2000, "TURSE81DWEW": 2000
         }
-
         
         if code in gift_codes:
             if code in global_used_codes:
