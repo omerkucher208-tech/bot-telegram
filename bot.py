@@ -1051,7 +1051,17 @@ def handle_text(message):
             "TURSE1KA4K0P": 2000,
             "TURSE8I8I01PP": 2000,
             "TURSE1Q332BV": 2000,
-            "turse2027": 500
+            "turse2027": 500,
+            "TURSE192DBDB": 2000,
+            "TURSEBSB55AL": 2000,
+            "TURSE109SD0B": 2000,
+            "TURSE1SK66BB": 2000,
+            "TURSE10WJB2B": 2000,
+            "TURSE10NDM03": 2000,
+            "TURSEPSlaQQ8": 2000,
+            "TURSE@@102jd": 2000,
+            "TURSE19Dlll000": 2000,
+            "TURSE81DWEW": 2000
         }
         
         if code in gift_codes:
